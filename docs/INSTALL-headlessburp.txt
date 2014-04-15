@@ -1,0 +1,344 @@
+==================================
+ Headless Burp Suite Installation
+==================================
+
+If you stumble upon a bug, please file a ticket on the GitHub
+project or send a pull request with the patch.
+
+Note that this functionality requires a Burp Suite extension that
+is provided in another repository.
+
+Headless Burp Suite Concept
+===========================
+
+Burp and Burp Suite are trademarks of Portswigger, Ltd.
+
+The idea is to run Burp Suite Professional as an active scanner
+between a test script (simple HTTP requests, or a browser driven by
+Selenium) and the web site. The findings from Burp Suite are written
+into a database. If there is a previously unseen finding, the test
+suite will fail, requiring the developer to check the cause. If the
+issue was a false positive, it can be left in the database so the same
+issue will not re-trigger.
+
+As a picture:
+
+                  Dev.
+  +----------+      o
+  | Database |---- -+-
+  +----------+     / \
+       |
+  +----------+   start    +----------+      +--------+
+  | Test     |----------->|Burp Suite|----->|Web site|
+  | runner   |<-----------|          |      +--------+
+  +----------+  results   |- - - - - |
+       |                  |Headless  |
+  +----------+       8080 |Burp      |
+  | Browser  |----------->|Extension |
+  +----------+            +----------+
+
+The test runner, Behave, starts the Burp Suite in headless mode, and
+then calls developer-provided project-specific positive test cases
+that generate HTTP traffic. The scripts run by Behave communicate with
+an extension that is loaded within Burp Suite that handles
+scanning-related chores.
+
+The test script and the extension within Burp communicate using
+in-band signaling. There are special requests made to specific ports
+that trigger activities in the extension. The results are dumped to
+Burp Suite's standard output as JSON, picked up by the test script,
+and stored into the database.
+
+After setting up the system, the developer / test engineer only needs
+to provide the positive test cases that cause HTTP traffic, and
+analyse the findings in the database.
+
+Software requirements
+=====================
+
+1. Python package dependencies; see requirements.txt. You should be
+   able to install the requirements using
+
+    pip install -r requirements.txt
+
+   As a suggestion, you might want to use a virtualenv.
+
+2. Burp Suite Professional. You need the commercially licensed
+   version, which can be obtained from http://portswigger.net/. Please
+   note that according to Burp Suite licence at the time of writing,
+   you are not permitted to offer a "Burp Suite as a Service" type
+   system.
+
+3. The Headless Burp Suite extension for Burp Suite, available from
+   another repository.
+
+4. Jython standalone JAR file, minimum version 2.7beta1, available
+   from http://www.jython.org/downloads.html. This is used to run the
+   headless-burp extension within Burp Suite.
+
+5. Valid, positive test cases that actually generate HTTP requests
+   towards your system. This can be browser automation (e.g.,
+   Selenium) or just simple requests performed from a script. Because
+   these are application specific, these test cases need to be
+   provided by you. As an example, if your project has a REST API, you
+   should write a function that creates those requests; if your app is
+   a web application with a browser UI, you probably need to create a
+   positive test case in Selenium to drive through the user scenario.
+
+6. EITHER sqlite3 and an sqlite database viewer (e.g., sqlitebrowser)
+   for checking results and marking false positives as
+   acceptable;
+
+   OR a PostgreSQL database that is network-reachable, a database on
+   that server, and user credentials with SELECT and INSERT rights,
+   and a tool to view the database contents. 
+   GUI ones such as pgadmin3 or Libreoffice Base work.
+
+   Setting up the database is described in
+   mittn/docs/INSTALL-databases.txt.
+
+Environment requirements
+========================
+
+- Burp Suite requires Oracle Java 7 runtime.
+
+- Burp Suite needs to be "installed". In this process, you provide the
+  license key to it and Burp Suite saves a license blob into its
+  configuration file.
+
+- The test driver is Behave. Behave runs BDD test cases described in
+  Gherkin, a BDD language. Changes to your tests would be likely to be
+  made to the Gherkin files that have a .feature suffix. Behave can
+  emit JUnit XML test result documents. This is likely to be your
+  preferred route of getting the test results into Jenkins.
+
+- New findings are added into an SQL database, which holds the
+  information about known false positives, so that they are not
+  reported during subsequent runs. The system supports local
+  file-based sqlite databases that require no credentials, and
+  database servers running PostgreSQL. On selecting and configuring
+  the database, see mittn/docs/INSTALL-databases.txt.
+
+- Your test target (the server) should preferably be under a specific
+  domain that never changes, so you can create a safety-net Burp Suite
+  configuration that ensures that Burp Suite does not send scanning
+  requests to third party web sites. The stricter you can make this
+  filter, the better.
+
+- You need a test deployment that has no real customer data and is not
+  in production. Usually, Burp Suite active scanner should not be run
+  against production systems, or systems containing customer data.
+
+Burp Suite installation
+=======================
+
+- Install Burp Suite by copying the Burp Suite JAR file, Jython JAR
+  file, and the headless-burp Python script into a suitable directory.
+
+- Start Burp Suite Professional with:
+
+    java -jar -Xmx1g -XX:MaxPermSize=1G <BurpSuiteJarFile> &
+
+- Install your license file (Help | About/Licence | Update Licence Key...).
+
+- Check the Alerts tab. If it reports any errors, those need to be
+  resolved before you continue the setup.
+
+- Install the headless-burp extension. From Extension tab, Options
+  subtab, select "Location of Jython standalone JAR file" so that it
+  points to the Jython JAR file; "Folder for loading modules" so that
+  it points to the directory where you downloaded the headless-burp
+  extension.
+
+- From Extension tab, Extensions subtab, click on Add. "Extension
+  type" is Python, and "Extension file" is the HeadlessBurp.py (the
+  headless-burp extension from the mittn/burp-extension directory). 
+
+- Select "Output to system console" as the Standard Output. Click
+  Next.
+
+- Check that the Errors tab has no Python errors in it, and click
+  Close. Check that the standard output in the shell from where you
+  started Burp Suite says
+
+    {"running": 1}
+
+  This signals that the headless-burp extension has started. You need
+  to get this working before it makes sense to continue.
+
+- Under Target tab, Scope subtab, click on Add.
+
+- Under Host or IP range, enter the domain or IP range your test
+  server resides in. This is the safety net. Click Ok. Under Options
+  tab, locate the Out-of-Scope Requests section, and ensure that "Drop
+  all out-of-scope requests" and "Use suite scope" are selected. This
+  enforces the safety net.
+
+- Under Proxy tab, Options subtab, check that there is one Proxy
+  Listener, running at 127.0.0.1:8080, and there is a checkbox in
+  "Running" and "Invisible" columns.
+
+- From Burp menu, select Exit. This will save this configuration as
+  the default.
+
+- It would now be a good idea to test Burp Suite and the extension
+  manually with a GUI-based browser (run on the same host) to ensure
+  it works. If you want to do this, start Burp again, and set all the
+  proxy settings of the browser to use localhost:8080. In the Proxy
+  tab, Intercept subtab, click on the Intercept button so it reads
+  "Intercept is off", and switch to the History subtab. Make a (plain)
+  http request (to one of the domains you whitelisted in Target /
+  Scope) from the browser, and you should see the request and response
+  appearing in the list. Under the Scanner tab, you should see new
+  scans begin for each HTTP request made by the browser. These are
+  initiated by the extension. If this does not work, it is useful to
+  debug before you continue, as there is little chance things would be
+  fixed automagically for you if they don't work now. Check again the
+  Alerts tab to determine if anything went wrong.
+
+- Edit mittn/features/environment.py to reflect the location where you
+  installed Burp Suite.
+
+The False Positives Database
+============================
+
+You must set up a database for false positives. Please refer to
+mittn/docs/INSTALL-databases.txt.
+
+Setting up the test case
+========================
+
+The important files that apply to the headless-burp test are:
+
+  1. The Burp Suite tests are specified in
+     mittn/features/headless-burp.feature. You need to edit this file
+     to describe the test targets you want to test.
+
+  2. The Burp Suite test steps are in mittn/mittn/headlessburp. There
+     should not be a need to alter anything in this directory.
+
+  3. The function that is called to run your project-specific
+     positive, valid test scenarios is in
+     mittn/features/scenarios.py. A template has been provided which
+     you can edit. You need to edit this file to run the positive
+     valid test cases; this is described in more detail below.
+
+  4. General test configuration items in
+     mittn/features/environment.py; again, a template has been
+     provided.
+
+In the features/scenarios.py, you will need to implement the valid
+test case(s) (e.g., a Selenium test run(s)) in a function that gets two
+parameters: The identifier of the test case (which you can use to
+select a specific test, if you have several) and the HTTP proxy
+address.
+
+Your function needs to set the HTTP proxies appropriately, and then
+run the valid test case. 
+
+If your valid test fails, you should assert failure so that the test
+case is marked as a failure:
+
+  assert False, "Valid test scenario did not work as expected, scenario id %s" % scenario_id
+
+or something similar; this will cause the test run to fail and the
+error message to get logged. For the coverage and success of Burp
+Suite active scanning, it is important that your positive valid tests
+function correctly. Otherwise it is not guaranteed that you are
+actually testing anything. At a minimum, for example, when testing a
+REST API, you should check that your valid request returned a 2xx
+response or something.
+
+If your tests can raise an exception, catch those and kill the Burp
+Suite process before exiting. If you leave Burp Suite running,
+subsequent tests runs will fail as Burp Suite invocations will be
+unable to bind to the proxy port.
+
+Running the tests
+=================
+
+Run the tests with
+
+  behave features/yourfeaturefile.feature --junit --junit-directory PATH
+
+with the mittn directory in your PYTHONPATH (or run the tool from
+mittn/), and PATH pointing where you want the JUnit XML output. If
+your test automation system does not use JUnit XML, you can, of
+course, leave those options out.
+
+You should first try to run the tool from the command line so that you
+can determine that Burp Suite runs cleanly. Ensure you installed Burp
+Suite correctly (see earlier in this document).
+
+Checking the results
+====================
+
+If there were any new findings (i.e., active scanner issues that were
+not previously seen for this specific test scenario), the test will
+flag a failure.
+
+The findings are added into the false positives database, which is the
+PostgreSQL or sqlite database you set up earlier. All new issues have
+"1" in the new_issue column. Any new issues are re-reported after each
+run, until they are marked as false positives or fixed.
+
+If the issue was a false positive, you need to mark this column as
+"0". The issue will not be reported after this. If the same issue
+manifests itself in a different URI or a different test case, it will
+be re-reported as a separate issue.
+
+If the issue was a true positive, after fixing the issue, you need to
+delete the line from the database.
+
+The results database has the following fields:
+
+- new_issue: 1 if the issue is pending triage (whether or not it is a
+  false positive)
+
+- issue_no: an unique id number
+
+- scenario_id: test case identifier corresponding to the test case id
+  in the .feature file
+
+- url: the URI in which the issue was found
+
+- severity: Burp Suite reported severity level
+
+- issuetype: Burp Suite's issue type code
+
+- issuename: Burp Suite provided issue explanation
+
+- issuedetail: Burp Suite provided details of this finding
+
+- confidence: Burp Suite provided confidence estimate
+
+- host: the host where the issue was detected
+
+- port: the port (on the host) where the issue was detected
+
+- protocol: http or https
+
+- messagejson: a list of JSON objects that contain the complete HTTP
+  requests and responses that Burp Suite sent or received when
+  detecting this issue. There may be several request/response pairs;
+  if this is the case, the interesting part is usually found by
+  comparing the requests and responses side-by side.
+
+If you are required to file a bug report on the finding to someone
+else, it is suggested you include, at a minimum, the URI, issue type,
+issue detail, and the HTTP request/response pairs as debug
+information.
+
+Issues you may encounter
+========================
+
+If starting Burp Suite fails, check whether there is an instance
+already running. Exit those instances.
+
+If Burp Suite does not seem to listen to the socket, start Burp Suite
+with GUI and check whether the proxy listener is running and
+listening.
+
+If the headless-burp extension does not report back on the Burp Suite
+standard output, check that the output of the extension is directed to
+system console.

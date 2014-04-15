@@ -1,0 +1,67 @@
+# pylint: disable=E0602,E0102
+
+'''Set up environment specific settings'''
+
+from behave import *
+
+def before_all(context):
+    """Things to do before anything else"""
+
+    ####
+    # Common settings for more than one test type
+    ####
+
+    # The following will have an effect if using a PostgreSQL database,
+    # otherwise unused
+    context.psql_dbname = "baseline"
+    context.psql_dbhost = "localhost"
+    context.psql_dbport = 5432
+    context.psql_dbuser = "mittn"
+    context.psql_dbpwdenv = "PGPASSWORD"  # Env var name that holds the password
+
+    # The following will have an effect if usinq an sqlite database,
+    # otherwise unused
+    context.sqlite_database = "/path/to/baseline.sqlite"
+
+    # The following is used as the proxy setting across tests
+    # (Note that Burp Suite proxy address is a separate setting, below)
+    context.proxy_address = None
+    # If you actually have a proxy, use, for example:
+    # context.proxy_address = "localhost:8080"
+
+    ####
+    # headless-burp specific
+    ####
+
+    # Remember that in addition to configure the paths here, you need
+    # to install the "headless-burp" Burp Extender plugin in Burp
+    # Suite, and set its output to stdout. Refer to installation
+    # instructions for details.
+
+    # Burp suite JAR file absolute path
+    burp_location = "/path/to/burpsuite.jar"
+
+    # Burp Suite proxy address
+    context.burp_proxy_address = "localhost:8080"
+
+    # Command line to start Burp Suite
+    # Usually you should not need to touch this.
+    context.burp_cmdline = "java -jar -Xmx1g -Djava.awt.headless=true -XX:MaxPermSize=1G " + burp_location
+
+    # An alternate that shows GUI, perhaps helpful for debugging Burp
+    # issues (note: startup is much, much slower)
+    # context.burp_cmdline = "java -jar -Xmx1g -XX:MaxPermSize=1G " + burp_location
+
+    ####
+    # httpfuzzer specific
+    ####
+
+    # Radamsa binary absolute path
+    context.radamsa_location = "/path/to/radamsa"
+
+    ####
+    # tlschecker specific
+    ####
+
+    # sslyze absolute path (version >= 0.8)
+    context.sslyze_location = "/path/to/sslyze"

@@ -1,0 +1,44 @@
+--
+-- Create the Mittn baseline database for sqlite3.
+-- Run as:
+--
+-- sqlite3 baseline.sqlite < create-baseline-database.sqlite3
+--
+-- The resulting file, baseline.sqlite, is your database file.
+--
+
+CREATE TABLE headless_burp_issues (
+       -- Issues found by headless-burp test runs
+    new_issue numeric,
+    issue_no INTEGER PRIMARY KEY,
+    scenario_id BLOB,
+    url BLOB,
+    severity BLOB,
+    issuetype BLOB,
+    issuename BLOB,
+    issuedetail BLOB,
+    confidence BLOB,
+    host BLOB,
+    port BLOB,
+    protocol BLOB,
+    messagejson BLOB
+);
+
+CREATE TABLE httpfuzzer_issues (
+       -- Issues found by HTTP fuzzer/injector test runs
+    new_issue numeric,
+    issue_no INTEGER PRIMARY KEY,
+    scenario_id BLOB,
+    uri BLOB,
+    method BLOB,
+    error BLOB,
+    timeout BLOB,
+    badstring BLOB,
+    status BLOB,    
+    request BLOB,
+    submission BLOB,
+    resp_headers BLOB,
+    resp_body BLOB,
+    resp_history BLOB
+);
+

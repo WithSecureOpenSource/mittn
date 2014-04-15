@@ -1,0 +1,14 @@
+# pylint: disable=E0602,E0102
+
+"""
+Copyright (c) 2013-2014 F-Secure
+See LICENSE for details
+"""
+
+from behave import *
+
+# Import all step definitions for all the test tools.
+from mittn.headlessburp.steps import *
+from mittn.tlschecker.steps import *
+# The following will be future development
+#from mittn.httpfuzzer.steps import *
