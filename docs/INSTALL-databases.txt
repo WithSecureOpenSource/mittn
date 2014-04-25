@@ -2,8 +2,9 @@
  Configuring baseline databases
 ================================
 
-If you stumble upon a bug, please file a ticket on the GitHub
-project or send a pull request with the patch.
+If you stumble upon a bug or an unclear section in the instructions,
+please file a ticket on the GitHub project or send a pull request with
+the patch.
 
 NOTE: This document makes some references to the "httpfuzzer" tool
 which is not yet released. Just ignore those parts for now.
@@ -18,8 +19,8 @@ deployed just for the duration of a test run and then shut down. The
 baseline database holds the information on new findings and known
 false positives in a central place.
 
-Currently, the httpfuzzer and headless-burp tools use baseline
-databases. The headless-burp tool requires a database; the httpfuzzer
+Currently, the httpfuzzer and headless-scanner tools use baseline
+databases. The headless-scanner tool requires a database; the httpfuzzer
 can be run without one, but the usefulness is greatly reduced.
 
 If you need a centralised database that receives issues from a number
@@ -36,7 +37,7 @@ Selecting the appropriate database
 
 The test system uses an SQL database to store false positives, so that
 it doesn't report them as errors. Whenever new positives are
-encountered, those are added to the database. The developers must
+encountered, those are added to the database. The developers can then
 check the finding. If the finding is a false positive, they will need
 to mark it as such in the database (by setting a flag new_issue as
 zero on that finding). If it was a real positive, that finding needs
@@ -55,9 +56,9 @@ the database solution you want to use:
 
   2. If you run tests concurrently on several nodes against the same
      system under test, or if your test system is on a VM instance
-     that is destroyed after the tests, or if you want to share the
-     results easily with a larger team, it is probably easier to use
-     PostgreSQL.
+     that is destroyed after the tests (i.e., the host has no
+     persistent storage), or if you want to share the results easily
+     with a larger team, it is probably easier to use PostgreSQL.
 
 There are two setup scripts in the Mittn/data directory. These will
 set up the database and user for you.

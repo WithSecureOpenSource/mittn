@@ -12,7 +12,7 @@ security testing has little chance of working either.
 
 import requests
 import logging
-from mittn.headlessburp.burp_comms import *
+from mittn.headlessscanner.proxy_comms import *
 
 
 def run_scenario(scenario_id, proxy_address, burp_process):

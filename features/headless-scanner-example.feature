@@ -1,6 +1,6 @@
-Feature: Do a Burp Suite active scan
+Feature: Do a headless active scan
   As a developer,
-  I want to run Burp Suite active scan against my system
+  I want to run an active scan against my system
   So that I detect any regression from baseline security
 
   # Edit features/environment.py to include correct paths to Burp

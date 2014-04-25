@@ -28,7 +28,8 @@ The rationale is:
 Mittn was originally inspired by Gauntlt (http://gauntlt.org/). You
 might also want to have a look at BDD-Security
 (http://www.continuumsecurity.net/bdd-intro.html) that is a pretty
-awesome system for automating security testing with OWASP Zaproxy.
+awesome system for automating security testing, and offers similar
+functionality with OWASP Zaproxy.
 
 Installation
 ------------
@@ -36,24 +37,28 @@ Installation
 Exact installation varies by the test tool you want to use. See the
 docs/ directory for detailed instructions.
 
-Note on the status
-------------------
+Features
+--------
 
 Currently, the tool implements:
 
 - Automated web scanning by driving Burp Suite Professional's Active
-  Scanner (you need a commercial licence)
+  Scanner, available from http://portswigger.net/. Burp and Burp Suite
+  are trademarks of Portswigger, Ltd.
 
-- TLS configuration scanning using sslyze
+- TLS configuration scanning using sslyze, available from
+  https://github.com/iSECPartners/sslyze.
 
 In near future, we will also release:
 
-- HTTP API fuzzing (JSON, form submissions, URI paths) with Radamsa
+- HTTP API fuzzing (JSON, form submissions, URI paths) with Radamsa,
+  available from https://code.google.com/p/ouspg/wiki/Radamsa.
+
+If you'd like something else to be supported, please open an issue
+ticket against the GitHub project.
 
 As you can see, all the heavy lifting is done by existing tools.
 Mittn just glues it together.
-
-Burp and Burp Suite are trademarks of Portswigger, Ltd.
 
 Contact information
 -------------------
@@ -61,6 +66,4 @@ Contact information
 If you have found a bug, please file a ticket in the GitHub project,
 or just send a pull request with a patch.
 
-I would really like to hear about successful or non-successful tries
-to use the tools; my email addresses are
-antti.vaha-sipila@f-secure.com (work) and avs@iki.fi (private).
+For other queries, you can send email to opensource@f-secure.com.

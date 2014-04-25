@@ -1,21 +1,23 @@
-==================================
- Headless Burp Suite Installation
-==================================
+===============================
+ Headless Scanning Installation
+===============================
 
 If you stumble upon a bug, please file a ticket on the GitHub
 project or send a pull request with the patch.
 
-Note that this functionality requires a Burp Suite extension that
-is provided in another repository.
-
-Headless Burp Suite Concept
-===========================
+Note that this functionality requires a Burp Suite extension that is
+provided at https://github.com/F-Secure/headless-scanner-driver, and a
+licensed Burp Suite Professional, available from
+http://portswigger.net/.
 
 Burp and Burp Suite are trademarks of Portswigger, Ltd.
 
-The idea is to run Burp Suite Professional as an active scanner
-between a test script (simple HTTP requests, or a browser driven by
-Selenium) and the web site. The findings from Burp Suite are written
+Headless Scanning Concept
+=========================
+
+The idea is to run an intercepting scanning proxy as an active scanner
+between a test script (e.g., simple HTTP requests, or a browser driven
+by Selenium) and the web site. The findings from the proxy are written
 into a database. If there is a previously unseen finding, the test
 suite will fail, requiring the developer to check the cause. If the
 issue was a false positive, it can be left in the database so the same
@@ -29,29 +31,34 @@ As a picture:
   +----------+     / \
        |
   +----------+   start    +----------+      +--------+
-  | Test     |----------->|Burp Suite|----->|Web site|
-  | runner   |<-----------|          |      +--------+
+  | Test     |----------->|Intercept |----->|Web site|
+  | runner   |<-----------|Proxy     |      +--------+
   +----------+  results   |- - - - - |
        |                  |Headless  |
-  +----------+       8080 |Burp      |
+  +----------+       8080 |Scanning  |
   | Browser  |----------->|Extension |
   +----------+            +----------+
 
-The test runner, Behave, starts the Burp Suite in headless mode, and
-then calls developer-provided project-specific positive test cases
-that generate HTTP traffic. The scripts run by Behave communicate with
-an extension that is loaded within Burp Suite that handles
+The test runner, Behave, starts the proxy in headless mode, and then
+calls developer-provided project-specific positive test cases that
+generate HTTP traffic. The scripts run by Behave communicate with an
+extension that is loaded within the intercepting proxy that handles
 scanning-related chores.
 
-The test script and the extension within Burp communicate using
-in-band signaling. There are special requests made to specific ports
-that trigger activities in the extension. The results are dumped to
-Burp Suite's standard output as JSON, picked up by the test script,
-and stored into the database.
+The test script and the extension within the proxy communicate using
+in-band signaling (this is a suboptimal design, but at the time of
+writing, the best I could come up with). There are special requests
+made to specific ports that trigger activities in the extension. The
+results are dumped to the standard output of the proxy as JSON, picked
+up by the test script, and stored into the database.
 
 After setting up the system, the developer / test engineer only needs
 to provide the positive test cases that cause HTTP traffic, and
 analyse the findings in the database.
+
+The target is that the developers only need to provide new functional
+test cases; addition of new functional tests automagically extends the
+scanning into that new territory.
 
 Software requirements
 =====================
@@ -69,12 +76,12 @@ Software requirements
    you are not permitted to offer a "Burp Suite as a Service" type
    system.
 
-3. The Headless Burp Suite extension for Burp Suite, available from
-   another repository.
+3. The Headless Scanner Driver extension for Burp Suite, available
+   from https://github.com/F-Secure/headless-scanner-driver.
 
 4. Jython standalone JAR file, minimum version 2.7beta1, available
    from http://www.jython.org/downloads.html. This is used to run the
-   headless-burp extension within Burp Suite.
+   Headless Scanner Driver extension within Burp Suite.
 
 5. Valid, positive test cases that actually generate HTTP requests
    towards your system. This can be browser automation (e.g.,
@@ -86,13 +93,12 @@ Software requirements
    positive test case in Selenium to drive through the user scenario.
 
 6. EITHER sqlite3 and an sqlite database viewer (e.g., sqlitebrowser)
-   for checking results and marking false positives as
-   acceptable;
+   for checking results and marking false positives as acceptable;
 
    OR a PostgreSQL database that is network-reachable, a database on
    that server, and user credentials with SELECT and INSERT rights,
-   and a tool to view the database contents. 
-   GUI ones such as pgadmin3 or Libreoffice Base work.
+   and a tool to view the database contents. GUI ones such as pgadmin3
+   or Libreoffice Base work.
 
    Setting up the database is described in
    mittn/docs/INSTALL-databases.txt.
@@ -100,11 +106,7 @@ Software requirements
 Environment requirements
 ========================
 
-- Burp Suite requires Oracle Java 7 runtime.
-
-- Burp Suite needs to be "installed". In this process, you provide the
-  license key to it and Burp Suite saves a license blob into its
-  configuration file.
+- A properly installed intercepting proxy.
 
 - The test driver is Behave. Behave runs BDD test cases described in
   Gherkin, a BDD language. Changes to your tests would be likely to be
@@ -120,51 +122,52 @@ Environment requirements
   the database, see mittn/docs/INSTALL-databases.txt.
 
 - Your test target (the server) should preferably be under a specific
-  domain that never changes, so you can create a safety-net Burp Suite
-  configuration that ensures that Burp Suite does not send scanning
+  domain that never changes, so you can create a safety-net proxy
+  configuration that ensures that the proxy does not send scanning
   requests to third party web sites. The stricter you can make this
   filter, the better.
 
-- You need a test deployment that has no real customer data and is not
-  in production. Usually, Burp Suite active scanner should not be run
-  against production systems, or systems containing customer data.
+- I would recommend that, as the scanning target, you use a test
+  deployment that has no real customer data and is not in
+  production.
 
-Burp Suite installation
-=======================
+Installing the Headless Scanner Driver
+======================================
 
-- Install Burp Suite by copying the Burp Suite JAR file, Jython JAR
-  file, and the headless-burp Python script into a suitable directory.
+- We assume you have a working and properly installed copy of Burp
+  Suite Professional.
+
+- Install the Jython JAR file and the HeadlessScannerDriver.py Python
+  script into a suitable directory.
 
 - Start Burp Suite Professional with:
 
     java -jar -Xmx1g -XX:MaxPermSize=1G <BurpSuiteJarFile> &
 
-- Install your license file (Help | About/Licence | Update Licence Key...).
-
 - Check the Alerts tab. If it reports any errors, those need to be
   resolved before you continue the setup.
 
-- Install the headless-burp extension. From Extension tab, Options
-  subtab, select "Location of Jython standalone JAR file" so that it
-  points to the Jython JAR file; "Folder for loading modules" so that
-  it points to the directory where you downloaded the headless-burp
-  extension.
+- Install the HeadlessScannerDriver.py extension. From Extension tab,
+  Options subtab, select "Location of Jython standalone JAR file" so
+  that it points to the Jython JAR file; "Folder for loading modules"
+  so that it points to the directory where you downloaded the
+  HeadlessScannerDriver.py extension.
 
 - From Extension tab, Extensions subtab, click on Add. "Extension
-  type" is Python, and "Extension file" is the HeadlessBurp.py (the
-  headless-burp extension from the mittn/burp-extension directory). 
+  type" is Python, and "Extension file" is HeadlessScannerDriver.py.
 
 - Select "Output to system console" as the Standard Output. Click
   Next.
 
 - Check that the Errors tab has no Python errors in it, and click
   Close. Check that the standard output in the shell from where you
-  started Burp Suite says
+  started the proxy says
 
     {"running": 1}
 
-  This signals that the headless-burp extension has started. You need
-  to get this working before it makes sense to continue.
+  This signals that the HeadlessScannerDriver.py extension has
+  started. You need to get this working before it makes sense to
+  continue.
 
 - Under Target tab, Scope subtab, click on Add.
 
@@ -176,28 +179,33 @@ Burp Suite installation
 
 - Under Proxy tab, Options subtab, check that there is one Proxy
   Listener, running at 127.0.0.1:8080, and there is a checkbox in
-  "Running" and "Invisible" columns.
+  "Running" column. If your functional test cases are not proxy-aware,
+  you also need to check the "Invisible" column.
 
 - From Burp menu, select Exit. This will save this configuration as
-  the default.
+  the default, and it will be used every time the proxy is started in
+  headless mode.
 
-- It would now be a good idea to test Burp Suite and the extension
+- It would now be a good idea to test the proxy and the extension
   manually with a GUI-based browser (run on the same host) to ensure
-  it works. If you want to do this, start Burp again, and set all the
-  proxy settings of the browser to use localhost:8080. In the Proxy
-  tab, Intercept subtab, click on the Intercept button so it reads
-  "Intercept is off", and switch to the History subtab. Make a (plain)
-  http request (to one of the domains you whitelisted in Target /
-  Scope) from the browser, and you should see the request and response
-  appearing in the list. Under the Scanner tab, you should see new
-  scans begin for each HTTP request made by the browser. These are
-  initiated by the extension. If this does not work, it is useful to
-  debug before you continue, as there is little chance things would be
-  fixed automagically for you if they don't work now. Check again the
-  Alerts tab to determine if anything went wrong.
+  it works. If you want to do this, start the proxy again, and set all
+  the proxy settings of the browser to use localhost:8080.
+
+  In the Proxy tab, Intercept subtab, click on the Intercept button so
+  it reads "Intercept is off", and switch to the History subtab. Make
+  a (plain) http request to one of the domains you whitelisted in
+  Target / Scope from the browser, and you should see the request and
+  response appearing in the list.
+
+  Under the Scanner tab, you should see new scans begin for each HTTP
+  request made by the browser. These are initiated by the
+  extension. If this does not work, it is useful to debug before you
+  continue, as there is little chance things would be fixed
+  automagically for you if they don't work now. Check again the Alerts
+  tab to determine if anything went wrong.
 
 - Edit mittn/features/environment.py to reflect the location where you
-  installed Burp Suite.
+  installed the proxy.
 
 The False Positives Database
 ============================
@@ -208,14 +216,16 @@ mittn/docs/INSTALL-databases.txt.
 Setting up the test case
 ========================
 
-The important files that apply to the headless-burp test are:
+The important files that apply to the HeadlessScannerDriver.py test
+are:
 
-  1. The Burp Suite tests are specified in
-     mittn/features/headless-burp.feature. You need to edit this file
-     to describe the test targets you want to test.
+  1. The headless scanning tests are specified in
+     mittn/features/headless-scanning.feature. You need to edit this
+     file to describe the test targets you want to test.
 
-  2. The Burp Suite test steps are in mittn/mittn/headlessburp. There
-     should not be a need to alter anything in this directory.
+  2. The headless scanning test steps are in
+     mittn/mittn/headlessscanning. There should not be a need to alter
+     anything in this directory.
 
   3. The function that is called to run your project-specific
      positive, valid test scenarios is in
@@ -228,7 +238,7 @@ The important files that apply to the headless-burp test are:
      provided.
 
 In the features/scenarios.py, you will need to implement the valid
-test case(s) (e.g., a Selenium test run(s)) in a function that gets two
+test case(s) (e.g., Selenium test run(s)) in a function that gets two
 parameters: The identifier of the test case (which you can use to
 select a specific test, if you have several) and the HTTP proxy
 address.
@@ -242,12 +252,12 @@ case is marked as a failure:
   assert False, "Valid test scenario did not work as expected, scenario id %s" % scenario_id
 
 or something similar; this will cause the test run to fail and the
-error message to get logged. For the coverage and success of Burp
-Suite active scanning, it is important that your positive valid tests
-function correctly. Otherwise it is not guaranteed that you are
-actually testing anything. At a minimum, for example, when testing a
-REST API, you should check that your valid request returned a 2xx
-response or something.
+error message to get logged. For the coverage and success of scanning,
+it is important that your positive valid tests function
+correctly. Otherwise it is not guaranteed that you are actually
+testing anything. At a minimum, for example, when testing a REST API,
+you should check that your valid request returned a 2xx response or
+something.
 
 If your tests can raise an exception, catch those and kill the Burp
 Suite process before exiting. If you leave Burp Suite running,
@@ -267,8 +277,8 @@ your test automation system does not use JUnit XML, you can, of
 course, leave those options out.
 
 You should first try to run the tool from the command line so that you
-can determine that Burp Suite runs cleanly. Ensure you installed Burp
-Suite correctly (see earlier in this document).
+can determine that the proxy is started cleanly. If there is an issue,
+see the section "Troubleshooting" at the end of this file.
 
 Checking the results
 ====================
@@ -302,15 +312,16 @@ The results database has the following fields:
 
 - url: the URI in which the issue was found
 
-- severity: Burp Suite reported severity level
+- severity: severity level reported by the proxy
 
-- issuetype: Burp Suite's issue type code
+- issuetype: issue type code reported by the proxy (can be useful for
+  sorting a large number of findings)
 
-- issuename: Burp Suite provided issue explanation
+- issuename: issue explanation provided by the proxy
 
-- issuedetail: Burp Suite provided details of this finding
+- issuedetail: details of this finding provided by the proxy
 
-- confidence: Burp Suite provided confidence estimate
+- confidence: confidence estimate reported by the proxy
 
 - host: the host where the issue was detected
 
@@ -319,26 +330,36 @@ The results database has the following fields:
 - protocol: http or https
 
 - messagejson: a list of JSON objects that contain the complete HTTP
-  requests and responses that Burp Suite sent or received when
+  requests and responses that the proxy sent or received when
   detecting this issue. There may be several request/response pairs;
   if this is the case, the interesting part is usually found by
   comparing the requests and responses side-by side.
 
 If you are required to file a bug report on the finding to someone
-else, it is suggested you include, at a minimum, the URI, issue type,
-issue detail, and the HTTP request/response pairs as debug
-information.
+else (e.g., the development team within your organisation), it is
+suggested you include, at a minimum, the URI, issue type, issue
+detail, and the HTTP request/response pairs as debug information.
 
-Issues you may encounter
-========================
+Troubleshooting
+===============
 
-If starting Burp Suite fails, check whether there is an instance
-already running. Exit those instances.
+If starting the proxy fails, check:
+
+  - whether there is an instance already running. Exit those
+    instances. Only one proxy instance can bind to the same port
+    at any given time. If your test cases terminate without killing
+    the proxy process, this may leave the proxy running.
+
+  - whether the proxy has been properly installed. Follow the guidance
+    earlier in this document and try to create HTTP requests manually
+    with a browser while running the HeadlessScannerDriver.py
+    extension.
 
 If Burp Suite does not seem to listen to the socket, start Burp Suite
-with GUI and check whether the proxy listener is running and
-listening.
+with GUI and check whether the proxy listener is running and listening
+(the appropriate checkboxes should be checked).
 
-If the headless-burp extension does not report back on the Burp Suite
-standard output, check that the output of the extension is directed to
-system console.
+Check that the output of the extension is directed to system
+console. When you start the proxy in headless mode from a command
+line, you should see it output a small JSON blob when the extension
+starts.

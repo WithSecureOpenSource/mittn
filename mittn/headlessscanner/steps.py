@@ -19,7 +19,7 @@ import re
 import logging
 import psycopg2
 import os
-from mittn.headlessburp.burp_comms import *
+from mittn.headlessscanner.proxy_comms import *
 # Import positive test scenario implementations
 from features.scenarios import *
 
@@ -64,7 +64,7 @@ def step_impl(context):
     logging.getLogger("requests").setLevel(logging.WARNING)
     burpprocess = start_burp(context)
 
-    # Send a message to headless-burp extension and wait for response
+    # Send a message to headless-scanner-driver extension and wait for response
 
     proxydict = {'http': 'http://' + context.burp_proxy_address,
                  'https': 'https://' + context.burp_proxy_address}
@@ -77,7 +77,7 @@ def step_impl(context):
     proxy_message = read_next_json(burpprocess)
     if proxy_message is None:
         kill_subprocess(burpprocess)
-        assert False, "Timed out communicating to headless-burp extension over %s. Is something else running there?" % context.burp_proxy_address
+        assert False, "Timed out communicating to headless-scanner-driver extension over %s. Is something else running there?" % context.burp_proxy_address
 
     # Shut down Burp Suite
 
@@ -118,7 +118,7 @@ def step_impl(context, timeout):
             requests.get("http://localhost:1111", proxies=proxydict, timeout=1)
         except requests.exceptions.ConnectionError as error:
             kill_subprocess(burpprocess)
-            assert False, "Could not communicate with headless-burp over %s (%s)" % (proxy_address, error.reason)
+            assert False, "Could not communicate with headless-scanner-driver over %s (%s)" % (proxy_address, error.reason)
         # Burp extensions' stdout buffers will fill with a lot of results, and
         # it hangs, so we time out here and just proceed with reading the output.
         except requests.Timeout:
@@ -153,7 +153,7 @@ def step_impl(context, timeout):
         requests.get("http://localhost:1112", proxies=proxydict, timeout=1)
     except requests.exceptions.ConnectionError as error:
         kill_subprocess(burpprocess)
-        assert False, "Could not communicate with headless-burp over %s (%s)" % (proxy_address, error.reason)
+        assert False, "Could not communicate with headless-scanner-driver over %s (%s)" % (proxy_address, error.reason)
     # Burp extensions' stdout buffers will fill with a lot of results, and
     # it hangs, so we time out here and just proceed with reading the output.
     except requests.Timeout:
