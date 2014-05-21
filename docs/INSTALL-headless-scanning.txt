@@ -177,6 +177,16 @@ Installing the Headless Scanner Driver
   all out-of-scope requests" and "Use suite scope" are selected. This
   enforces the safety net.
 
+  If your test scenarios cause requests to be made to hosts that are
+  outside your Target Scope, that specific scan is listed by Burp Suite
+  as "abandoned". You can select whether that will trigger a scan failure
+  or just treated as a finished scan. If you know exactly that your test
+  scenario only sends requests to your target, you should enforce a failure
+  with any abandoned scan. This ensures that if there is a misconfiguration
+  that prevents scanning from happening, your test case will fail instead of
+  silently not working. The example .feature file has an example of how
+  to configure this behaviour.
+
 - Under Proxy tab, Options subtab, check that there is one Proxy
   Listener, running at 127.0.0.1:8080, and there is a checkbox in
   "Running" column. If your functional test cases are not proxy-aware,

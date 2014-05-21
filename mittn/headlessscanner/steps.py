@@ -107,6 +107,13 @@ def step_impl(context, scenario_id):
     assert True
 
 
+@given(u'all URIs successfully scanned')
+def step_impl(context):
+    """Store a flag whether abandoned scans should be flagged as scan failures"""
+    context.fail_on_abandoned_scans = True
+    assert True
+
+
 @when(u'scenario test is run through Burp Suite with "{timeout}" minute timeout')
 def step_impl(context, timeout):
     """Call scenarios.py to run a test scenario referenced by the scenario identifier"""
@@ -117,6 +124,7 @@ def step_impl(context, timeout):
 
     # Wait for end of scan or timeout
     re_abandoned = re.compile("^abandoned")  # Regex to match abandoned scan statuses
+    re_finished = re.compile("^(abandoned|finished)")  # Regex to match finished scans
     timeout_counter = 0
     proxydict = {'http': 'http://' + context.burp_proxy_address,
                  'https': 'https://' + context.burp_proxy_address}
@@ -142,11 +150,12 @@ def step_impl(context, timeout):
             kill_subprocess(burpprocess)
             assert False, "No scan items were started by Burp. Check web test case and suite scope."
         for status in proxy_message:
-            if status != 'finished':
+            if not re_finished.match(status):
                 finished = False
-            if re_abandoned.match(status):
-                kill_subprocess(burpprocess)
-                assert False, "Burp Suite reports an abandoned scan. DNS problem or unknown hosts in test case?"
+            if hasattr(context, 'fail_on_abandoned_scans'):  # In some test setups, abandoned scans are failures, and this has been set
+                if re_abandoned.match(status):
+                    kill_subprocess(burpprocess)
+                    assert False, "Burp Suite reports an abandoned scan, but you wanted all scans to succeed. DNS problem or non-Target Scope hosts targeted in a test scenario?"
         if finished is True:  # All scan statuses were in state "finished"
             break
         timeout_counter += 1
