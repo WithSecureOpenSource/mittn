@@ -26,6 +26,7 @@ from features.scenarios import *
 
 @given(u'a PostgreSQL baseline database')
 def step_impl(context):
+    """Test that we can connect to a database, and make a note that we're using Postgres"""
     context.db = "postgres"
     if os.getenv(context.psql_dbpwdenv) is None:
         assert False, "Password for %s not found in environment variable %s" % (
@@ -46,6 +47,7 @@ def step_impl(context):
 
 @given(u'an sqlite baseline database')
 def step_impl(context):
+    """Test that we can open a database, and make a note that we're using Postgres"""
     context.db = "sqlite"
     try:
         with open(context.sqlite_database) as handle:  # Does file exist?
@@ -61,10 +63,13 @@ def step_impl(context):
 
 @given(u'a working Burp Suite installation')
 def step_impl(context):
+    """Test that we have a correctly installed Burp Suite and the scanner driver available"""
     logging.getLogger("requests").setLevel(logging.WARNING)
     burpprocess = start_burp(context)
 
-    # Send a message to headless-scanner-driver extension and wait for response
+    # Send a message to headless-scanner-driver extension and wait for response.
+    # Communicates to the scanner driver using a magical port number.
+    # See https://github.com/F-Secure/headless-scanner-driver for additional documentation
 
     proxydict = {'http': 'http://' + context.burp_proxy_address,
                  'https': 'https://' + context.burp_proxy_address}
@@ -79,7 +84,7 @@ def step_impl(context):
         kill_subprocess(burpprocess)
         assert False, "Timed out communicating to headless-scanner-driver extension over %s. Is something else running there?" % context.burp_proxy_address
 
-    # Shut down Burp Suite
+    # Shut down Burp Suite. Again, see the scanner driver plugin docs for further info.
 
     poll = select.poll()
     poll.register(burpprocess.stdout, select.POLLNVAL | select.POLLHUP)  # pylint: disable-msg=E1101
@@ -97,12 +102,15 @@ def step_impl(context):
 
 @given(u'scenario id "{scenario_id}"')
 def step_impl(context, scenario_id):
+    """Store the identifier of the test scenario to be run"""
     context.scenario_id = scenario_id
     assert True
 
 
 @when(u'scenario test is run through Burp Suite with "{timeout}" minute timeout')
 def step_impl(context, timeout):
+    """Call scenarios.py to run a test scenario referenced by the scenario identifier"""
+
     # Run the scenario (implemented in scenarios.py)
     burpprocess = start_burp(context)
     run_scenario(context.scenario_id, context.burp_proxy_address, burpprocess)
@@ -180,6 +188,7 @@ def step_impl(context, timeout):
 
 @then(u'baseline is unchanged')
 def step_impl(context):
+    """Check whether the findings reported by Burp have already been found earlier"""
     scanissues = context.results
     dbconn = None
     if context.db == "sqlite":
