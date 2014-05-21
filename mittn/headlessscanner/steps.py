@@ -118,7 +118,8 @@ def step_impl(context, timeout):
             requests.get("http://localhost:1111", proxies=proxydict, timeout=1)
         except requests.exceptions.ConnectionError as error:
             kill_subprocess(burpprocess)
-            assert False, "Could not communicate with headless-scanner-driver over %s (%s)" % (proxy_address, error.reason)
+            assert False, "Could not communicate with headless-scanner-driver over %s (%s)" % (
+                context.burp_proxy_address, error.reason)
         # Burp extensions' stdout buffers will fill with a lot of results, and
         # it hangs, so we time out here and just proceed with reading the output.
         except requests.Timeout:
@@ -153,7 +154,8 @@ def step_impl(context, timeout):
         requests.get("http://localhost:1112", proxies=proxydict, timeout=1)
     except requests.exceptions.ConnectionError as error:
         kill_subprocess(burpprocess)
-        assert False, "Could not communicate with headless-scanner-driver over %s (%s)" % (proxy_address, error.reason)
+        assert False, "Could not communicate with headless-scanner-driver over %s (%s)" % (
+            context.burp_proxy_address, error.reason)
     # Burp extensions' stdout buffers will fill with a lot of results, and
     # it hangs, so we time out here and just proceed with reading the output.
     except requests.Timeout:
@@ -179,6 +181,7 @@ def step_impl(context, timeout):
 @then(u'baseline is unchanged')
 def step_impl(context):
     scanissues = context.results
+    dbconn = None
     if context.db == "sqlite":
         database = context.sqlite_database
         try:
@@ -197,7 +200,9 @@ def step_impl(context):
             dbcursor = dbconn.cursor()
         except psycopg2.Error as error:
             assert False, "Cannot connect to the PostgreSQL database %s on %s:%s as user %s: %s" % (
-                dbname, dbhost, dbport, dbuser, error.pgerror)
+                context.psql_dbname, context.psql_dbhost, context.psql_dbport, context.psql_dbuser, error.pgerror)
+    if dbconn is None:
+        assert False, "Database type not defined. Declare a database in the Gherkin file."
     # Go through each issue, and add issues that aren't in the database
     # into the database. If we've found new issues, assert False.
     # Issues will be differentiated by scenario_id (=test case id, e.g., which
