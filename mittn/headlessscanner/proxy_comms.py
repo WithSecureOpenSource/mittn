@@ -19,16 +19,15 @@ def read_next_json(process):
     # We will wait on Burp Suite's standard output
     pollobj = select.poll()
     pollobj.register(process.stdout, select.POLLIN)
+    jsonobject = None  # Default to a failure
     while True:
         # Wait for max. 30 s, if timeout, return None.
         descriptors = pollobj.poll(30000)
         if descriptors == []:
-            jsonobject = None
             break
         # Read a line; if not JSON, continue polling with a new timeout.
         line = process.stdout.readline()
         if line == '':  # Burp Suite has exited
-            jsonobject = None
             break
         try:
             jsonobject = json.loads(line)
