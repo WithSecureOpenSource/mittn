@@ -120,12 +120,13 @@ def step_impl(context, timeout):
 
     # Run the scenario (implemented in scenarios.py)
     burpprocess = start_burp(context)
+    timeout = int(timeout)
+    scan_start_time = time.time()  # Note the scan start time
     run_scenario(context.scenario_id, context.burp_proxy_address, burpprocess)
 
     # Wait for end of scan or timeout
     re_abandoned = re.compile("^abandoned")  # Regex to match abandoned scan statuses
     re_finished = re.compile("^(abandoned|finished)")  # Regex to match finished scans
-    timeout_counter = 0
     proxydict = {'http': 'http://' + context.burp_proxy_address,
                  'https': 'https://' + context.burp_proxy_address}
     while True:  # Loop until timeout or all scan tasks finished
@@ -158,8 +159,7 @@ def step_impl(context, timeout):
                     assert False, "Burp Suite reports an abandoned scan, but you wanted all scans to succeed. DNS problem or non-Target Scope hosts targeted in a test scenario?"
         if finished is True:  # All scan statuses were in state "finished"
             break
-        timeout_counter += 1
-        if timeout_counter / 6 > timeout:
+        if (time.time() - scan_start_time) > (timeout * 60):
             kill_subprocess(burpprocess)
             assert False, "Scans did not finish in %s minutes, timed out. Scan statuses were: %s" % (
                 timeout, proxy_message)
