@@ -6,8 +6,16 @@ If you stumble upon a bug or an unclear section in the instructions,
 please file a ticket on the GitHub project or send a pull request with
 the patch.
 
-NOTE: This document makes some references to the "httpfuzzer" tool
-which is not yet released. Just ignore those parts for now.
+   NOTE: If you configured the database before the httpfuzzer
+   functionality was released to Open Source, and want to reuse your
+   data from past test runs, you need to:
+      1) Manually rename headless_burp_issues table:
+         ALTER TABLE headless_burp_issues RENAME TO headlessscanner_issues;
+      2) Remove the httpfuzzer_issues table and re-create it:
+         DROP TABLE httpfuzzer_issues;
+         Read this document for details on (re-)creating the table.
+    If this is the first time you are using Mittn, this does not affect you.
+
 
 What are baseline databases?
 ============================

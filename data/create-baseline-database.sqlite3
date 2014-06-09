@@ -6,9 +6,13 @@
 --
 -- The resulting file, baseline.sqlite, is your database file.
 --
+-- NOTE: If you ran this before the httpfuzzer was released into
+-- Open Source, you need to DROP and re-CREATE the httpfuzzer_issues
+-- table, and change the name of the headless scanner issues table
+-- (ALTER TABLE).
 
-CREATE TABLE headless_burp_issues (
-       -- Issues found by headless-burp test runs
+CREATE TABLE headlessscanner_issues (
+       -- Issues found by headlessscanner test runs
     new_issue numeric,
     issue_no INTEGER PRIMARY KEY,
     scenario_id BLOB,
@@ -29,14 +33,14 @@ CREATE TABLE httpfuzzer_issues (
     new_issue numeric,
     issue_no INTEGER PRIMARY KEY,
     scenario_id BLOB,
-    uri BLOB,
-    method BLOB,
-    error BLOB,
-    timeout BLOB,
-    badstring BLOB,
-    status BLOB,    
-    request BLOB,
-    submission BLOB,
+    url BLOB,
+    server_protocol_error BLOB,
+    server_timeout BLOB,
+    server_error_text_match BLOB,
+    req_method BLOB,
+    req_headers BLOB,
+    req_body BLOB,
+    resp_statuscode BLOB,    
     resp_headers BLOB,
     resp_body BLOB,
     resp_history BLOB

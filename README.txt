@@ -6,7 +6,7 @@ Mittn
 Background
 ----------
 
-Mittn is (or will be) a suite of security testing tools to be run in
+Mittn is an evolving suite of security testing tools to be run in
 Continuous Integration context. It uses Python and Behave.
 
 The idea is that security people or developers can define a hardening
@@ -49,10 +49,8 @@ Currently, the tool implements:
 - TLS configuration scanning using sslyze, available from
   https://github.com/iSECPartners/sslyze.
 
-In near future, we will also release:
-
-- HTTP API fuzzing (JSON, form submissions, URI paths) with Radamsa,
-  available from https://code.google.com/p/ouspg/wiki/Radamsa.
+- HTTP API fuzzing (JSON and form submissions) with Radamsa, available
+  from https://code.google.com/p/ouspg/wiki/Radamsa.
 
 If you'd like something else to be supported, please open an issue
 ticket against the GitHub project.
@@ -63,7 +61,10 @@ Mittn just glues it together.
 Contact information
 -------------------
 
-If you have found a bug, please file a ticket in the GitHub project,
-or just send a pull request with a patch.
+If you have questions about the usage, please open a ticket in the
+GitHub project with a "Question" tag.
 
-For other queries, you can send email to opensource@f-secure.com.
+If you have found a bug, please file a ticket in the GitHub project.
+
+If necessary, you can also email opensource@f-secure.com, but opening
+a ticket on GitHub is preferable.

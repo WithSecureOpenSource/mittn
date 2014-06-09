@@ -10,5 +10,4 @@ from behave import *
 # Import all step definitions for all the test tools.
 from mittn.headlessscanner.steps import *
 from mittn.tlschecker.steps import *
-# The following will be future development
-#from mittn.httpfuzzer.steps import *
+from mittn.httpfuzzer.steps import *

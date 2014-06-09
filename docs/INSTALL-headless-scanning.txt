@@ -103,6 +103,16 @@ Software requirements
    Setting up the database is described in
    mittn/docs/INSTALL-databases.txt.
 
+   NOTE: If you installed the database before the httpfuzzer
+   functionality was released to Open Source, and want to reuse your
+   data from past test runs, you need to:
+      1) Manually rename headless_burp_issues table:
+         ALTER TABLE headless_burp_issues RENAME TO headlessscanner_issues;
+      2) Remove the httpfuzzer_issues table and re-create it:
+         DROP TABLE httpfuzzer_issues;
+         And then refer to the database installation document.
+    If this is the first time you are using Mittn, this does not affect you.
+
 Environment requirements
 ========================
 

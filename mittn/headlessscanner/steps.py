@@ -232,33 +232,33 @@ def step_impl(context):
         # First check whether this is an unprocessed old finding
         if context.db == "sqlite":
             dbcursor.execute(
-                "SELECT * FROM headless_burp_issues WHERE scenario_id=? AND url=? AND issuetype=? AND new_issue=1",
+                "SELECT * FROM headlessscanner_issues WHERE scenario_id=? AND url=? AND issuetype=? AND new_issue=1",
                 (str(context.scenario_id), issue['url'], str(issue['issuetype'])))
         if context.db == "postgres":
             dbcursor.execute(
-                "select * from headless_burp_issues where scenario_id=%s and url=%s and issuetype=%s and new_issue=1",
+                "select * from headlessscanner_issues where scenario_id=%s and url=%s and issuetype=%s and new_issue=1",
                 (str(context.scenario_id), issue['url'], str(issue['issuetype'])))
         if len(dbcursor.fetchall()) != 0:
             unprocessed_items += 1
 
         # Then check whether this is a new finding, and if yes, add
         if context.db == "sqlite":
-            dbcursor.execute("SELECT * FROM headless_burp_issues WHERE scenario_id=? AND url=? AND issuetype=?",
+            dbcursor.execute("SELECT * FROM headlessscanner_issues WHERE scenario_id=? AND url=? AND issuetype=?",
                              (str(context.scenario_id), issue['url'], str(issue['issuetype'])))
         if context.db == "postgres":
-            dbcursor.execute("select * from headless_burp_issues where scenario_id=%s and url=%s and issuetype=%s",
+            dbcursor.execute("select * from headlessscanner_issues where scenario_id=%s and url=%s and issuetype=%s",
                              (str(context.scenario_id), issue['url'], str(issue['issuetype'])))
         if len(dbcursor.fetchall()) == 0:
             new_items += 1
             if context.db == "sqlite":
                 dbcursor.execute(
-                    "INSERT INTO headless_burp_issues (new_issue, scenario_id, url, severity, issuetype, issuename, issuedetail, confidence, host, port, protocol, messagejson) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO headlessscanner_issues (new_issue, scenario_id, url, severity, issuetype, issuename, issuedetail, confidence, host, port, protocol, messagejson) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     (1, str(context.scenario_id), issue['url'], issue['severity'], str(issue['issuetype']),
                      issue['issuename'], issue['issuedetail'], issue['confidence'], issue['host'], str(issue['port']),
                      issue['protocol'], json.dumps(issue['messages'])))
             if context.db == "postgres":
                 dbcursor.execute(
-                    "insert into headless_burp_issues (new_issue, scenario_id, url, severity, issuetype, issuename, issuedetail, confidence, host, port, protocol, messagejson) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    "insert into headlessscanner_issues (new_issue, scenario_id, url, severity, issuetype, issuename, issuedetail, confidence, host, port, protocol, messagejson) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                     (1, str(context.scenario_id), issue['url'], issue['severity'], str(issue['issuetype']),
                      issue['issuename'], issue['issuedetail'], issue['confidence'], issue['host'], str(issue['port']),
                      issue['protocol'], json.dumps(issue['messages'])))

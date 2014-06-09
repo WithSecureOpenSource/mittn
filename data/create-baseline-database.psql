@@ -13,6 +13,10 @@
 -- TLS, your firewalls are correctly configured, and that the password
 -- is something sane.
 --
+-- NOTE: If you ran this before the httpfuzzer was released into
+-- Open Source, you need to DROP and re-CREATE the httpfuzzer_issues
+-- table, and change the name of the headless scanner issues table
+-- (ALTER TABLE).
 
 SET statement_timeout = 0;
 SET client_encoding = 'UTF8';
@@ -28,7 +32,7 @@ ALTER USER mittn WITH ENCRYPTED PASSWORD 'mittn';
 
 \connect baseline mittn localhost 5432
 
-CREATE TABLE headless_burp_issues (
+CREATE TABLE headlessscanner_issues (
     new_issue numeric,
     issue_no SERIAL PRIMARY KEY,
     scenario_id text,
@@ -44,20 +48,21 @@ CREATE TABLE headless_burp_issues (
     messagejson text
 );
 
-COMMENT ON TABLE headless_burp_issues IS 'Issues found by headless-burp test runs';
+COMMENT ON TABLE headlessscanner_issues IS 'Issues found by headless-burp test
+runs';
 
 CREATE TABLE httpfuzzer_issues (
     new_issue numeric,
     issue_no SERIAL PRIMARY KEY,
     scenario_id text,
-    uri text,
-    method text,
-    error text,
-    timeout text,
-    badstring text,
-    status text,    
-    request text,
-    submission text,
+    url text,
+    server_protocol_error text,
+    server_timeout text,
+    server_error_text_match text,
+    req_method text,
+    req_headers text,
+    req_body text,
+    resp_statuscode text,    
     resp_headers text,
     resp_body text,
     resp_history text
