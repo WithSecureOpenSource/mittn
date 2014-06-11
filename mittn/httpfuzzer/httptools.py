@@ -21,7 +21,6 @@ def send_http(context, submission, timeout=5, proxy=None,
     :param timeout: Timeout value (optional)
     :param proxy: Proxy specification (optional)
     :param body_only: False to send GET data in request body, not in URI
-    :param content_type: Content type of data we're sending
     :param scenario_id: User specified scenario identifier from feature file
     :param auth: Requests authentication object, from authenticate.py
     :param method: HTTP method to be used
@@ -42,7 +41,7 @@ def send_http(context, submission, timeout=5, proxy=None,
 
     req = create_http_request(method,
                               uri,
-                              context.content_type,
+                              content_type,
                               submission,
                               auth)
 
@@ -101,7 +100,7 @@ def create_http_request(method, uri, content_type, submission, auth=None):
 
     if method == 'GET':  # Inject into URI parameter
         req = requests.Request(method=method, headers=headers,
-                               url=str(uri) + "?" + submission,
+                               url=str(uri) + submission,
                                auth=auth).prepare()
     else:  # Inject into request body
         req = requests.Request(method=method, headers=headers, url=uri,

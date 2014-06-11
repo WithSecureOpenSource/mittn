@@ -15,6 +15,7 @@ import json
 import urlparse2
 import subprocess
 import re
+from mittn.httpfuzzer.url_params import *
 
 
 @given(u'an authentication flow id "{auth_id}')
@@ -98,7 +99,7 @@ def step_impl(context, submission, method):
     if hasattr(context, 'targeturi') is False:
         assert False, "Target URI not specified"
 
-    # Unserialise into a data structure and store in a list 
+    # Unserialise into a data structure and store in a list
     # (one valid case is just a special case of providing
     # several valid cases)
     context.submission = [urlparse2.parse_qs(submission)]
@@ -106,6 +107,28 @@ def step_impl(context, submission, method):
     context.type = 'urlencode'  # Used downstream for selecting encoding
     context.content_type = 'application/x-www-form-urlencoded; charset=utf-8'
     test_valid_submission(context)
+    assert True
+
+
+@given(u'valid url parameters "{submission}"')
+def step_impl(context, submission):
+    """For static injection, get the url parameters (semicolon
+    separated URL parameters)
+    """
+
+    if hasattr(context, 'timeout') is False:
+        context.timeout = 5  # Sensible default
+    if hasattr(context, 'targeturi') is False:
+        assert False, "Target URI not specified"
+
+    # Unserialise into a data structure and store in a list
+    # (one valid case is just a special case of providing
+    # several valid cases)
+    context.submission = [url_to_dict(submission)]
+    context.submission_method = 'GET'
+    context.type = 'url-parameters'  # Used downstream for selecting encoding
+    context.content_type = 'application/x-www-form-urlencoded; charset=utf-8'
+#    test_valid_submission(context)
     assert True
 
 
@@ -256,6 +279,27 @@ def step_impl(context, method):
     # Add all valid cases into a list as unserialised data structures
     for row in context.table:
         context.submission.append(urlparse2.parse_qs(row['submission']))
+    test_valid_submission(context)
+    assert True
+
+
+@given(u'valid url parameters')
+def step_impl(context, method):
+    """Store a list of valid url parameters (used for valid cases for
+    fuzz generation)
+    """
+
+    if hasattr(context, 'timeout') is False:
+        context.timeout = 5  # Sensible default
+    if hasattr(context, 'targeturi') is False:
+        assert False, "Target URI not specified"
+    context.submission = []
+    context.submission_method = 'GET'
+    context.type = 'url-parameters'  # Used downstream for selecting encoding
+    context.content_type = 'application/x-www-form-urlencoded; charset=utf-8'
+    # Add all valid cases into a list as unserialised data structures
+    for row in context.table:
+        context.submission.append(url_to_dict(row['submission']))
     test_valid_submission(context)
     assert True
 

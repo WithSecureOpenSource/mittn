@@ -44,24 +44,24 @@ Feature: Do fuzz injection testing for an API
     # is used for valid case instrumentation and for initial valid case
     # probing, so it should respond with a success. Others samples listed
     # can trigger controlled errors, too. The first line is a column title.
-    #And valid JSON submissions using "POST" method
-    #| submission                            |
-    #| {"foo": 1, "bar": "OMalleys"}         |
-    #| {"foo": 2, "bar": "Liberty or Death"} |
-    #| {"foo": 42, "bar": "Kauppuri 5"}      |
+    And valid JSON submissions using "POST" method
+    | submission                            |
+    | {"foo": 1, "bar": "OMalleys"}         |
+    | {"foo": 2, "bar": "Liberty or Death"} |
+    | {"foo": 42, "bar": "Kauppuri 5"}      |
 
     # And this is for valid form submissions, see above (JSON) for guidance.
     # You can only have either the JSON or form submission active.
-    And valid form submissions using "POST" method
-      | submission                     |
-      | foo=1&bar=OMalleys             |
-      | foo=2&bar=Liberty%20or%20Death |
-      | foo=42&bar=Kauppuri%205        |
+    #And valid form submissions using "POST" method
+    # | submission                     |
+    # | foo=1&bar=OMalleys             |
+    # | foo=2&bar=Liberty%20or%20Death |
+    # | foo=42&bar=Kauppuri%205        |
 
     # Which HTTP methods to use for injection; comma-separated list
     # If you're injecting JSON, GET doesn't make much sense, but with
     # form submissions, you probably want to include GET.
-    And tests conducted with HTTP methods "GET,POST,PUT,DELETE"
+    And tests conducted with HTTP methods "POST,PUT,DELETE"
 
     # Timeout after which the requests are canceled so the test won't hang
     And a timeout of "5" seconds
@@ -88,28 +88,28 @@ Feature: Do fuzz injection testing for an API
     # Add your web frameworks' error strings here, and remove any that
     # would cause false positives. The first row is a title row.
     And storing any new cases of response bodies that contain strings
-    | string                |
-    | server error          |
-    | exception             |
-    | invalid response      |
-    | bad gateway           |
-    | internal ASP error    |
-    | service unavailable   |
-    | exceeded              |
-    | premature             |
-    | fatal error           |
-    | proxy error           |
-    | database error        |
-    | backend error         |
-    | SQL                   |
-    | mysql                 |
-    | postgres              |
-    | root:                 |
-    | parse error           |
-    | exhausted             |
-    | warning               |
-    | denied                |
-    | failure               |
+    | string              |
+    | server error        |
+    | exception           |
+    | invalid response    |
+    | bad gateway         |
+    | internal ASP error  |
+    | service unavailable |
+    | exceeded            |
+    | premature           |
+    | fatal error         |
+    | proxy error         |
+    | database error      |
+    | backend error       |
+    | SQL                 |
+    | mysql               |
+    | postgres            |
+    | root:               |
+    | parse error         |
+    | exhausted           |
+    | warning             |
+    | denied              |
+    | failure             |
 
     # Finally, if any of the above have failed, fail the test run
     Then no new issues were stored

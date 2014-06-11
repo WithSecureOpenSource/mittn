@@ -406,3 +406,35 @@ The findings in the database contain the following columns:
 
   resp_history: If the response came after a series of redirects, this
   contains the requests and responses of the redirects.
+
+Future features
+---------------
+
+The plan is to make the fuzzer also fuzz URL parts, including path and
+parameters. Currently, the URL parts fuzzing is not there, but you can
+inject into, and fuzz, URL parameters.
+
+URL parameters (not to be confused with form parameters!) are semicolon-
+separated:
+
+  ;parameter1=value1,value2;parameter2=value3
+
+This is specified in RFC 3986, section 3.3. This is a fairly niche
+thing, and has not been tested as much as the other modes.
+
+Currently, only the GET method (i.e., without body) is supported for
+URL path parameter injection.  If you want to inject to these, the
+feature file lines are:
+
+  Given valid url parameters ";foo=bar"
+  Given valid url parameters
+  	| submission   |
+	| ;foo=bar     |
+	| ;quux=bletch |
+
+for static injection and fuzzing, respectively.
+
+If URL path fuzzing will be supported in the future, this syntax
+_will_ change into accepting the actual complete URL, and an
+additional feature file rule will be introduced that specifies the
+valid body for otyher HTTP methods than GET.

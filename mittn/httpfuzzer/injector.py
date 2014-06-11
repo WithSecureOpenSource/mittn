@@ -11,6 +11,7 @@ from mittn.httpfuzzer.posttools import *
 from features.authenticate import authenticate
 import requests
 import logging
+from mittn.httpfuzzer.url_params import *
 
 
 def inject(context, injection_list):
@@ -35,33 +36,34 @@ def inject(context, injection_list):
                 # Output according to what the original source was
                 # Send URL-encoded submissions
                 if context.type == 'urlencode':
-                    form_string = serialise_to_url(injected_submission, encode=True)
-                    responses += send_http(context, form_string,
-                                           timeout=context.timeout,
-                                           proxy=context.proxy_address,
-                                           method=method,
-                                           scenario_id=context.scenario_id,
-                                           auth=authenticate(context,
-                                                             context.authentication_id))
+                    form_string = serialise_to_url(injected_submission, encode=True) + method
+                    if method == 'GET':
+                        form_string = '?' + form_string
+
+                # If the payload is in URL parameters (_not_ query)
+                if context.type == 'url-parameters':
+                    form_string = dict_to_urlparams(injected_submission)
+
                 # If the payload is JSON, send the raw thing
                 if context.type == 'json':
                     form_string = serialise_to_json(injected_submission,
                                                     encode=True)
-                    responses += send_http(context, form_string,
-                                           timeout=context.timeout,
-                                           proxy=context.proxy_address,
-                                           content_type="application/json",
-                                           scenario_id=context.scenario_id,
-                                           method=method,
-                                           auth=authenticate(context,
-                                                               context.authentication_id))
-                    # Here, I'd really like to send out unencoded (invalid)
-                    # JSON too, but the json library barfs too easily, so
-                    # we concentrate on application layer input fuzzing.
+
+                responses += send_http(context, form_string,
+                                       timeout=context.timeout,
+                                       proxy=context.proxy_address,
+                                       method=method,
+                                       content_type=context.content_type,
+                                       scenario_id=context.scenario_id,
+                                       auth=authenticate(context,
+                                                         context.authentication_id))
+
+                # Here, I'd really like to send out unencoded (invalid)
+                # JSON too, but the json library barfs too easily, so
+                # we concentrate on application layer input fuzzing.
 
                 if hasattr(context, "valid_case_instrumentation"):
                     test_valid_submission(context, injected_submission)
-
     return responses
 
 
@@ -92,9 +94,12 @@ def test_valid_submission(context, injected_submission=None):
 
     if context.type == 'json':
         data = json.dumps(context.submission[0])
-    else:
+    if context.type == 'urlencode':
         data = serialise_to_url(context.submission[0], encode=True)
-        #        data = context.submission[0]  # Requests will encode it
+        if context.submission_method == 'GET':
+            data = '?' + data
+    if context.type == 'url-parameters':
+        data = dict_to_urlparams(context.submission[0])
 
     # In the following loop, we try to send the valid case to the target.
     # If the response code indicates an auth failure, we acquire new auth
@@ -125,8 +130,6 @@ def test_valid_submission(context, injected_submission=None):
                                 verify=False, proxies=proxydict)
         except requests.exceptions.Timeout:
             assert False, "Valid case %s request to URI %s timed out after an " \
-                          "" \
-                          "" \
                           "injection %s" % (
                               context.submission_method, context.targeturi,
                               injected_submission)
@@ -144,7 +147,7 @@ def test_valid_submission(context, injected_submission=None):
                                   injected_submission, resp.status_code)
             else:
                 continue  # Unauthorised. Retry
-        if hasattr (context, "valid_cases"):
+        if hasattr(context, "valid_cases"):
             if resp.status_code not in context.valid_cases:
                 assert False, "Valid case %s request to URI %s after injected " \
                               "submission %s did not work: Response status " \
