@@ -93,7 +93,8 @@ def test_valid_submission(context, injected_submission=None):
     if context.type == 'json':
         data = json.dumps(context.submission[0])
     else:
-        data = context.submission[0]  # Requests will encode it
+        data = serialise_to_url(context.submission[0], encode=True)
+        #        data = context.submission[0]  # Requests will encode it
 
     # In the following loop, we try to send the valid case to the target.
     # If the response code indicates an auth failure, we acquire new auth

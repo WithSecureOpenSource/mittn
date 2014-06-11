@@ -96,13 +96,14 @@ def create_http_request(method, uri, content_type, submission, auth=None):
                'User-Agent': 'Mozilla/5.0 (compatible; Mittn HTTP '
                              'Fuzzer-Injector)',
                'X-Abuse': 'This is an automatically generated robustness test '
-                          'request'}
+                          'request',
+               'Connection': 'close'}
 
     if method == 'GET':  # Inject into URI parameter
         req = requests.Request(method=method, headers=headers,
-        url=str(uri) + "?" + submission,
-        auth=auth).prepare()
+                               url=str(uri) + "?" + submission,
+                               auth=auth).prepare()
     else:  # Inject into request body
         req = requests.Request(method=method, headers=headers, url=uri,
-        data=submission, auth=auth).prepare()
+                               data=submission, auth=auth).prepare()
     return req
