@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-"""List of static anomalies that can be injected. Before using, replace the
-email address nobody@mittn.org with a working email address you have control over.
-If email injections are successful, that address gets interesting email.
+"""List of static anomalies that can be injected. Before using,
+replace mittn.org domain references with something you have control over.
 """
 
 anomaly_list = [
@@ -52,14 +51,22 @@ anomaly_list = [
     '<?php',  # Start PHP block
 
     # URI injections
-    "&access_token=POSSIBLE_INJECTION_PROBLEM&",
-    "?access_token=POSSIBLE_INJECTION_PROBLEM&",
-    "?access_token=POSSIBLE_INJECTION_PROBLEM&",
-    "&amp;access_token=POSSIBLE_INJECTION_PROBLEM&amp;",
     'javascript:alert(1)',
     'data:text/plain;charset=utf-8;base64,UE9TU0lCTEVfSU5KRUNUSU9OX1BST0JMRU0=',
     'data:application/javascript;charset=utf-8;base64,PHNjcmlwdD5hbGVydCgwKTwvc2NyaXB0Pg==',
     'data:text/html;charset=utf-8;base64,PGh0bWw+PHNjcmlwdD5hbGVydCgwKTwvc2NyaXB0PjwvaHRtbD4=',
+    'tel:+358407531918',
+    'sms:+358407531918',
+
+    # Stuff that tries to confuse OAuth processing, e.g., whether redirect_uri
+    # is being looked at at all
+    'eyJhbGciOiJub25lIn0K.eyJyZnAiOiJtaXR0biIsCiJ0YXJnZXRfdXJpIjoiaHR0cDovL21pdHRuLm9yZyJ9Cg==.',  # A JWT state parameter
+    'redirect_uri',
+    'state',
+    "&access_token=POSSIBLE_INJECTION_PROBLEM&",
+    "?access_token=POSSIBLE_INJECTION_PROBLEM&",
+    "&redirect_uri=http://mittn.org/attack&",
+    "?redirect_uri=http://mittn.org/attack&",
 
     # Important numbers
     -1,
@@ -121,6 +128,13 @@ anomaly_list = [
     r'%s',
     r'%d',
 
+    # ANSI art makes your log files sparkle. These aren't likely to
+    # get flagged by the tool, but if the test setup's log files are
+    # viewed, these might highlight unwanted log injections
+    "\x1b[0;1;40;32mM\x1b[0m   \x1b[1;32mM\x1b[0m \x1b[1;31mIII\x1b[32m TTT\x1b[0m \x1b[31mTTT\x1b[37m \x1b[1;34mN\x1b[0m  \x1b[1;34mN\r\n\x1b[32mMM\x1b[0m \x1b[1;32mMM\x1b[0m  \x1b[1;31mI\x1b[0m   \x1b[1;32mT\x1b[0m   \x1b[31mT\x1b[37m  \x1b[1;34mNN\x1b[0m \x1b[1;34mN\r\n\x1b[32mM\x1b[0m \x1b[1;32mM\x1b[0m \x1b[1;32mM\x1b[0m  \x1b[1;31mI\x1b[0m   \x1b[1;32mT\x1b[0m   \x1b[31mT\x1b[37m  \x1b[1;34mN\x1b[0m \x1b[1;34mNN\r\n\x1b[32mM\x1b[0m   \x1b[1;32mM\x1b[0m  \x1b[1;31mI\x1b[0m   \x1b[1;32mT\x1b[0m   \x1b[31mT\x1b[37m  \x1b[1;34mN\x1b[0m \x1b[1;34mNN\r\n\x1b[32mM\x1b[0m   \x1b[1;32mM\x1b[0m \x1b[1;31mIII\x1b[0m  \x1b[1;32mT\x1b[0m   \x1b[31mT\x1b[37m  \x1b[1;34mN\x1b[0m  \x1b[1;34mN\r\n\x1a",
+    "\x1[2J",  # Clear screen
+    '\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07',  # BELs
+
     # Email
     'root@[127.0.0.1]',  # Well-formed but localhost
     'root@localhost',  # Well-formed but localhost
@@ -133,7 +147,7 @@ anomaly_list = [
     # Long strings
     "A" * 256,
     "A" * 1025,
-    "A" * 2049,
+    "A" * 65537,
     ":-) =) XD o_O" * 10000  # Rendering a lot of animated emoticons can cause pain
     # Enable following to allow 1 megabyte inputs
     #    "A" * 1024 * 1024
