@@ -132,7 +132,7 @@ anomaly_list = [
     # get flagged by the tool, but if the test setup's log files are
     # viewed, these might highlight unwanted log injections
     "\x1b[0;1;40;32mM\x1b[0m   \x1b[1;32mM\x1b[0m \x1b[1;31mIII\x1b[32m TTT\x1b[0m \x1b[31mTTT\x1b[37m \x1b[1;34mN\x1b[0m  \x1b[1;34mN\r\n\x1b[32mMM\x1b[0m \x1b[1;32mMM\x1b[0m  \x1b[1;31mI\x1b[0m   \x1b[1;32mT\x1b[0m   \x1b[31mT\x1b[37m  \x1b[1;34mNN\x1b[0m \x1b[1;34mN\r\n\x1b[32mM\x1b[0m \x1b[1;32mM\x1b[0m \x1b[1;32mM\x1b[0m  \x1b[1;31mI\x1b[0m   \x1b[1;32mT\x1b[0m   \x1b[31mT\x1b[37m  \x1b[1;34mN\x1b[0m \x1b[1;34mNN\r\n\x1b[32mM\x1b[0m   \x1b[1;32mM\x1b[0m  \x1b[1;31mI\x1b[0m   \x1b[1;32mT\x1b[0m   \x1b[31mT\x1b[37m  \x1b[1;34mN\x1b[0m \x1b[1;34mNN\r\n\x1b[32mM\x1b[0m   \x1b[1;32mM\x1b[0m \x1b[1;31mIII\x1b[0m  \x1b[1;32mT\x1b[0m   \x1b[31mT\x1b[37m  \x1b[1;34mN\x1b[0m  \x1b[1;34mN\r\n\x1a",
-    "\x1[2J",  # Clear screen
+    "\x1b[2J",  # Clear screen
     '\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07',  # BELs
 
     # Email
