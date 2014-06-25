@@ -16,7 +16,7 @@ anomaly_list = [
     "A harmless string",  # Something easy to start with
     str('\xc3\xa5\xc3\xa4\xc3\xb6'),  # Scandinavian characters as Unicode UTF-8
 
-    # SQL injections
+    # SQL and NoSQL injections
     "' --",  # SQL: End statement, start comment
     "' or 'x'='x' --",  # SQL: always true for strings
     "' or 1=1 --",  # SQL: End statement, evaluate to always true
@@ -36,6 +36,11 @@ anomaly_list = [
     "'; select @@version; --",  # MS SQL Server: show DB details
     "\\''; select @@version; --",  # MS SQL Server: show DB details, extra escape
     "&apos;&59; select @@version&59; --",  # MS SQL Server: show DB details, HTML entities
+    '/, "_id": /.*',  # End regex for MongoDB find function and inject a search parameter that matches all (and hope that makes the app barf)
+    '.*/, $where : function() { sleep(1000000) }, "_id": /.*',  # End regex for MongoDB find function and inject JavaScript code (that is hopefully slow enough)
+    '{ $ne : ""}',  # MongoDB match if parameter is not an empty string (and hopen that makes the app barf)
+    '{ $where : function() { sleep(1000000) } }',  # MongoDB try to execute JavaScript that is slow
+    '/.*/',  # MongoDB match everything as a regex (and again hope that breaks the app)
 
     # Shell injection
     r"`echo >injected.exe`",  # Backtick exec
@@ -64,22 +69,21 @@ anomaly_list = [
     '<?php',  # Start PHP block
 
     # URI injections
-    'javascript:alert(1)',
+    'javascript:sleep(1000000)',
     'data:text/plain;charset=utf-8;base64,UE9TU0lCTEVfSU5KRUNUSU9OX1BST0JMRU0=',
-    'data:application/javascript;charset=utf-8;base64,PHNjcmlwdD5hbGVydCgwKTwvc2NyaXB0Pg==',
+    'data:application/javascript;charset=utf-8;base64,c2xlZXAoMTAwMDAwMCkK',
     'data:text/html;charset=utf-8;base64,PGh0bWw+PHNjcmlwdD5hbGVydCgwKTwvc2NyaXB0PjwvaHRtbD4=',
-    'tel:+358407531918',
-    'sms:+358407531918',
+    'tel:+358407531918',  # Likely not to have server side effect but can open a modal dialog on a client
+    'sms:+358407531918',  # Likely not to have server side effect but can open a modal dialog on a client
 
-    # Stuff that tries to confuse OAuth processing, e.g., whether redirect_uri
-    # is being looked at at all
+    # Stuff that tries to confuse broken OAuth processing
     'eyJhbGciOiJub25lIn0K.eyJyZnAiOiJtaXR0biIsCiJ0YXJnZXRfdXJpIjoiaHR0cDovL21pdHRuLm9yZyJ9Cg==.',  # A JWT state parameter
     'redirect_uri',
     'state',
     "&access_token=POSSIBLE_INJECTION_PROBLEM&",
     "?access_token=POSSIBLE_INJECTION_PROBLEM&",
-    "&redirect_uri=http://mittn.org/attack&",
-    "?redirect_uri=http://mittn.org/attack&",
+    "&redirect_uri=http://mittn.org/attack&",   # Point to somewhere that returns an error; the test tool should follow redirects
+    "?redirect_uri=http://mittn.org/attack&",  # Point to somewhere that returns an error; the test tool should follow redirects
 
     # Important numbers
     -1,
@@ -129,6 +133,7 @@ anomaly_list = [
     '//',  # Start of comment
     r'%',  # Start of comment
     '--',  # Start of SQL comment
+    '?#',  # Start of PCRE comment (e.g., MongoDB regex queries)
     unichr(0),  # NULL
     unichr(0) + 'xxxxxxxx',  # NULL followed by more data
     unichr(0x1a),  # ctrl-z (end of stream)
