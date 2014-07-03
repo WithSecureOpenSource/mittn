@@ -41,6 +41,20 @@ anomaly_list = [
     '{ $ne : ""}',  # MongoDB match if parameter is not an empty string (and hopen that makes the app barf)
     '{ $where : function() { sleep(1000000) } }',  # MongoDB try to execute JavaScript that is slow
     '/.*/',  # MongoDB match everything as a regex (and again hope that breaks the app)
+    '\nFLUSHALL',  # Redis: remove all keys from the system
+    '\r\nFLUSHALL\r\n',  # Redis: remove all keys from the system
+    '"\n  while true do\n  end\nfoo="',  # Redis: Lua code injection into a string
+    "'\n  while true do\n  end\nfoo='",  # Redis: Lua code injection into a string
+    '_rev',  # Perhaps confuses a CouchDB query
+    '", "map":"function(map) { while(1); }", "',  # Try to inject a CouchDB map function
+    'function(map) { while(1); }',  # Again try to inject a CouchDB map function
+    '")\nLOAD CSV FROM "/dev/urandom" AS line //',  # Cypher (Neo4j) injection, hopefully induce a timeout
+    "')\nLOAD CSV FROM '/dev/urandom' AS line //",  # Cypher (Neo4j) injection, hopefully induce a timeout
+
+    # Regular expressions
+    r'(?R)*',  # Infinite recursion (PCRE)
+    r'\g<0>*',  # Infinite recursion (Ruby)
+    r'(?0)*',  # Infinite recursion (Perl)
 
     # Shell injection
     r"`echo >injected.exe`",  # Backtick exec
