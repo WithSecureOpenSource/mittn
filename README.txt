@@ -44,13 +44,15 @@ Currently, the tool implements:
 
 - Automated web scanning by driving Burp Suite Professional's Active
   Scanner, available from http://portswigger.net/. Burp and Burp Suite
-  are trademarks of Portswigger, Ltd.
+  are trademarks of Portswigger, Ltd. Tested with version 1.6.x.
 
 - TLS configuration scanning using sslyze, available from
-  https://github.com/iSECPartners/sslyze.
+  https://github.com/iSECPartners/sslyze. Tested with version 0.8. (Older
+  versions do not work.)
 
 - HTTP API fuzzing (JSON and form submissions) with Radamsa, available
-  from https://code.google.com/p/ouspg/wiki/Radamsa.
+  from https://code.google.com/p/ouspg/wiki/Radamsa. Tested with version 0.4a.
+  (Older versions do not work.)
 
 If you'd like something else to be supported, please open an issue
 ticket against the GitHub project.

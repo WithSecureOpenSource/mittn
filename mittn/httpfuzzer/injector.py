@@ -36,7 +36,7 @@ def inject(context, injection_list):
                 # Output according to what the original source was
                 # Send URL-encoded submissions
                 if context.type == 'urlencode':
-                    form_string = serialise_to_url(injected_submission, encode=True) + method
+                    form_string = serialise_to_url(injected_submission, encode=True)
                     if method == 'GET':
                         form_string = '?' + form_string
 
