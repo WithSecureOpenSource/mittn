@@ -23,6 +23,7 @@ def open_database(context):
         database = context.sqlite_database
         try:
             dbconn = sqlite3.connect(database)
+            dbconn.text_factory = str
         except (IOError, sqlite3.DatabaseError):
             assert False, "sqlite database '%s' not found, or not a database" \
                           % database
