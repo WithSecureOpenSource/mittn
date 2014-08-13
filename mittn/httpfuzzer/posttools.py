@@ -20,14 +20,14 @@ def serialise_to_url(dictionary, encode=True):
         if isinstance(dictionary[key], list):  # Multiple values for a key
             for value in dictionary[key]:
                 if encode is True:
-                    enc_key = urllib.quote(key)
-                    enc_value = urllib.quote(value)
+                    enc_key = urllib.quote(str(key))
+                    enc_value = urllib.quote(str(value))
                     serialised.append("%s=%s" % (enc_key, enc_value))
                 else:  # Output raw data (against spec, for fuzzing)
                     serialised.append("%s=%s" % (str(key), str(value)))
         else:
             if encode is True:
-                enc_key = urllib.quote(key)
+                enc_key = urllib.quote(str(key))
                 enc_value = urllib.quote(str(dictionary[key]))
                 serialised.append("%s=%s" % (enc_key, enc_value))
             else:  # Output raw data (against spec, for fuzzing)
