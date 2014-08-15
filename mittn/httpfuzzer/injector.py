@@ -49,6 +49,9 @@ def inject(context, injection_list):
                     form_string = serialise_to_json(injected_submission,
                                                     encode=True)
 
+                if hasattr(context, 'proxy_address') is False:
+                    context.proxy_address = None
+
                 responses += send_http(context, form_string,
                                        timeout=context.timeout,
                                        proxy=context.proxy_address,
