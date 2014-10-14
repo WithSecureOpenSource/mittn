@@ -79,7 +79,12 @@ def get_fuzz(valuelist, no_of_fuzzcases, radamsacmd):
         tempfilehandle = tempfile.mkstemp(suffix='.case',
                                           dir=valid_case_directory)
         with os.fdopen(tempfilehandle[0], "w") as filehandle:
-            filehandle.write(bytearray(str(valid_string), "UTF-8"))
+            # Radamsa only operates on strings, so make numbers and booleans
+            # into strings. (No, this won't fuzz effectively, use static
+            # injection to cover those cases.)
+            if isinstance(valid_string, (bool, int, long, float)):
+                valid_string = str(valid_string)
+            filehandle.write(bytearray(valid_string, "UTF-8"))
 
     # Run Radamsa
     try:
