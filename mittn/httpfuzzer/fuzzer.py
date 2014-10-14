@@ -79,7 +79,7 @@ def get_fuzz(valuelist, no_of_fuzzcases, radamsacmd):
         tempfilehandle = tempfile.mkstemp(suffix='.case',
                                           dir=valid_case_directory)
         with os.fdopen(tempfilehandle[0], "w") as filehandle:
-            filehandle.write(bytearray(valid_string, "UTF-8"))
+            filehandle.write(bytearray(str(valid_string), "UTF-8"))
 
     # Run Radamsa
     try:
