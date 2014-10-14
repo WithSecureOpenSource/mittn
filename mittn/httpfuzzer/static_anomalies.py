@@ -75,6 +75,8 @@ anomaly_list = [
     "var sys = require('sys'); sys.print('POSSIBLE_INJECTION_PROBLEM');",  # Node.js command injection
     "var exec = require('child_process').exec; exec('ping 127.0.0.1');",  # Node.js command injection, aim at timeout
     "'; var exec = require('child_process').exec; exec('ping 127.0.0.1');",  # Node.js command injection, aim at timeout
+    '() { :;}; exit',  # Shellshock: exit
+    '() { :;}; cat /dev/zero',  # Shellshock: try to hang
 
     # PHP injection
     '<?php exit(1) ?>',  # Add PHP block that tries to exit with a nonzero return code
