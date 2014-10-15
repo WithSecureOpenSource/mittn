@@ -18,7 +18,7 @@ import re
 from mittn.httpfuzzer.url_params import *
 
 
-@given(u'an authentication flow id "{auth_id}')
+@given(u'an authentication flow id "{auth_id}"')
 def step_impl(context, auth_id):
     """Store the authentication flow identifier. Tests in the feature file
     can use different authentication flows, and this can be used to
@@ -341,3 +341,4 @@ def step_impl(context):
     if old_findings > 0:
         assert False, "No new findings found, but %s unprocessed findings from past runs found in database." % old_findings
     assert True
+
