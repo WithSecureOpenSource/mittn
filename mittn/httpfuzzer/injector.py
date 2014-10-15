@@ -84,13 +84,17 @@ def test_valid_submission(context, injected_submission=None):
     :param injected_submission: Request body to be sent
     """
 
+    # to avoid errors re/ uninitialized object  
+    proxydict = {}
+    
     if injected_submission is None:
         injected_submission = "(None)"  # For user readability only
 
     logging.getLogger("requests").setLevel(logging.WARNING)
     if hasattr(context, 'proxy_address'):
-        proxydict = {'http': 'http://' + context.proxy_address,
-                     'https': 'https://' + context.proxy_address}
+        if context.proxy_address:
+            proxydict = {'http': 'http://' + context.proxy_address,
+                         'https': 'https://' + context.proxy_address}
     else:
         context.proxy = None
         proxydict = None
