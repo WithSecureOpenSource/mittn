@@ -5,8 +5,6 @@ Copyright (c) 2014 F-Secure
 See LICENSE for details
 """
 
-import psycopg2
-import sqlite3
 import os
 
 
@@ -20,6 +18,7 @@ def open_database(context):
         return None  # No false positives database is in use
     dbconn = None
     if context.db == "sqlite":
+        import sqlite3
         database = context.sqlite_database
         try:
             dbconn = sqlite3.connect(database)
@@ -27,7 +26,9 @@ def open_database(context):
         except (IOError, sqlite3.DatabaseError):
             assert False, "sqlite database '%s' not found, or not a database" \
                           % database
+    
     if context.db == "postgres":
+        import psycopg2
         try:
             dbconn = psycopg2.connect(database=context.psql_dbname,
                                       user=context.psql_dbuser,
