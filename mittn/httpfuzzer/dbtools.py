@@ -85,14 +85,14 @@ def known_false_positive(context, response, server_error_text_match=False):
                          "AND server_timeout=? "
                          "AND server_error_text_match=?", (
                              str(response['scenario_id']),
-                             str(response['resp_statuscode']),
                              str(response['server_protocol_error']),
+                             str(response['resp_statuscode']),
                              str(response['server_timeout']),
                              str(server_error_text_match)))
     if context.db == "postgres":
         dbcursor.execute(
-            "select * from httpfuzzer_issues where scenario_id=%s and status="
-            "%s and error=%s and timeout=%s and server_error_text_match=%s", (
+            "select * from httpfuzzer_issues where scenario_id=%s and resp_statuscode="
+            "%s and server_protocol_error=%s and server_timeout=%s and server_error_text_match=%s", (
                 str(response['scenario_id']), str(response['resp_statuscode']),
                 str(response['server_protocol_error']),
                 str(response['server_timeout']), str(server_error_text_match)))
@@ -182,9 +182,9 @@ def add_false_positive(context, response, server_error_text_match=False):
 
 def number_of_new_in_database(context):
     dbconn = open_database(context)
-    dbcursor = dbconn.cursor()
     if dbconn is None:  # No database in use
         return 0
+    dbcursor = dbconn.cursor()
     dbcursor.execute("SELECT * FROM httpfuzzer_issues WHERE new_issue=1")
     findings = len(dbcursor.fetchall())
     dbconn.close()
