@@ -6,45 +6,55 @@ See LICENSE for details
 """
 
 import os
+from sqlalchemy import create_engine, Table, Column, MetaData, exc, types
+from sqlalchemy import sql, and_
 
 
 def open_database(context):
-    """Opens the database specified in the feature file
+    """Opens the database specified in the feature file and creates
+    tables if not already created
 
     :param context: The Behave context
     :return: A database handle, or None if no database in use
     """
-    if hasattr(context, 'db') is False:
+    if hasattr(context, 'dburl') is False:
         return None  # No false positives database is in use
     dbconn = None
-    if context.db == "sqlite":
-        import sqlite3
-        database = context.sqlite_database
-        try:
-            dbconn = sqlite3.connect(database)
-            dbconn.text_factory = str
-        except (IOError, sqlite3.DatabaseError):
-            assert False, "sqlite database '%s' not found, or not a database" \
-                          % database
-    
-    if context.db == "postgres":
-        import psycopg2
-        try:
-            dbconn = psycopg2.connect(database=context.psql_dbname,
-                                      user=context.psql_dbuser,
-                                      password=os.environ[context.psql_dbpwdenv],
-                                      host=context.psql_dbhost,
-                                      port=int(context.psql_dbport))
-        except psycopg2.Error as error:
-            assert False, "Cannot connect to the PostgreSQL database %s on " \
-                          "%s:%s as user %s: %s" % (
-                              context.psql_dbname,
-                              context.psql_dbhost,
-                              context.psql_dbport,
-                              context.psql_dbuser,
-                              error.pgerror)
-    if dbconn is None:
-        assert False, "Unknown database type %s" % context.db
+
+    # Try to connect to the database
+    try:
+        db_engine = create_engine(context.dburl)
+        dbconn = db_engine.connect()
+    except (IOError, exc.OperationalError):
+        assert False, "Cannot connect to database '%s'" % context.dburl
+
+    # Set up the database table to store new findings and false positives.
+    # We use LargeBinary to store those fields that could contain somehow
+    # bad Unicode, just in case some component downstream tries to parse
+    # a string provided as Unicode.
+    db_metadata = MetaData()
+    db_metadata.bind = db_engine
+    context.httpfuzzer_issues = Table('httpfuzzer_issues', db_metadata,
+                                      Column('new_issue', types.Boolean),
+                                      Column('issue_no', types.Integer, primary_key=True, nullable=False),
+                                      Column('scenario_id', types.Text),
+                                      Column('url', types.Text),
+                                      Column('server_protocol_error', types.Boolean),
+                                      Column('server_timeout', types.Boolean),
+                                      Column('server_error_text_detected', types.Boolean),
+                                      Column('server_error_text_match', types.Text),
+                                      Column('req_method', types.Text),
+                                      Column('req_headers', types.LargeBinary),
+                                      Column('req_body', types.LargeBinary),
+                                      Column('resp_statuscode', types.Text),
+                                      Column('resp_headers', types.LargeBinary),
+                                      Column('resp_body', types.LargeBinary),
+                                      Column('resp_history', types.LargeBinary))
+
+    # Create the table if it doesn't exist
+    # and otherwise no effect
+    db_metadata.create_all(db_engine)
+
     return dbconn
 
 
@@ -58,6 +68,7 @@ def known_false_positive(context, response, server_error_text_match=False):
     of the error texts specified in the feature file (True or False)
     :return: True or False, depending on whether this is a known issue
     """
+
     dbconn = open_database(context)
     if dbconn is None:
         # No false positive db is in use, all findings are treated as new
@@ -77,27 +88,22 @@ def known_false_positive(context, response, server_error_text_match=False):
     # field triggers an issue, you should thoroughly fuzz-test that field
     # separately.
 
-    dbcursor = dbconn.cursor()
-    if context.db == "sqlite":
-        dbcursor.execute("SELECT * FROM httpfuzzer_issues WHERE scenario_id=? "
-                         "AND server_protocol_error=? "
-                         "AND resp_statuscode=? "
-                         "AND server_timeout=? "
-                         "AND server_error_text_match=?", (
-                             str(response['scenario_id']),
-                             str(response['resp_statuscode']),
-                             str(response['server_protocol_error']),
-                             str(response['server_timeout']),
-                             str(server_error_text_match)))
-    if context.db == "postgres":
-        dbcursor.execute(
-            "select * from httpfuzzer_issues where scenario_id=%s and status="
-            "%s and error=%s and timeout=%s and server_error_text_match=%s", (
-                str(response['scenario_id']), str(response['resp_statuscode']),
-                str(response['server_protocol_error']),
-                str(response['server_timeout']), str(server_error_text_match)))
-    if len(dbcursor.fetchall()) == 0:
+    db_select = sql.select([context.httpfuzzer_issues]).where(
+        and_(
+            context.httpfuzzer_issues.c.scenario_id == str(response['scenario_id']),  # Text
+            context.httpfuzzer_issues.c.server_protocol_error == response['server_protocol_error'],  # Boolean
+            context.httpfuzzer_issues.c.resp_statuscode == str(response['resp_statuscode']),  # Text
+            context.httpfuzzer_issues.c.server_timeout == response['server_timeout'],  # Boolean
+            context.httpfuzzer_issues.c.server_error_text_detected == response['server_error_text_detected']))  # Boolean
+
+    db_result = dbconn.execute(db_select)
+
+    # If none found with these criteria, we did not know about this
+
+    if len(db_result.fetchall()) == 0:
         return False  # No, we did not know about this
+
+    db_result.close()
     dbconn.close()
     return True
 
@@ -134,58 +140,35 @@ def add_false_positive(context, response, server_error_text_match=False):
 
     # Add the finding into the database
 
-    dbcursor = dbconn.cursor()
-    if context.db == "sqlite":
-        dbcursor.execute(
-            "INSERT INTO httpfuzzer_issues (new_issue, "
-            "scenario_id, req_headers, req_body, "
-            "url, req_method, server_protocol_error, "
-            "server_timeout, server_error_text_match, "
-            "resp_statuscode, "
-            "resp_headers, resp_body, resp_history) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (1, str(response['scenario_id']),
-             str(response['req_headers']),
-             str(response['req_body']),
-             str(response['url']),
-             str(response['req_method']),
-             str(response['server_protocol_error']),
-             str(response['server_timeout']),
-             str(server_error_text_match),
-             str(response['resp_statuscode']),
-             str(response['resp_headers']), str(response['resp_body']),
-             str(response['resp_history'])))
-    if context.db == "postgres":
-        dbcursor.execute(
-            "insert into httpfuzzer_issues (new_issue, "
-            "scenario_id, req_headers, req_body, "
-            "url, req_method, server_protocol_error, "
-            "server_timeout, server_error_text_match, "
-            "resp_statuscode, "
-            "resp_headers, resp_body, resp_history) "
-            "values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-            (1, str(response['scenario_id']),
-             str(response['req_headers']),
-             str(response['req_body']),
-             str(response['url']),
-             str(response['req_method']),
-             str(response['server_protocol_error']),
-             str(response['server_timeout']),
-             str(server_error_text_match),
-             str(response['resp_statuscode']),
-             str(response['resp_headers']), str(response['resp_body']),
-             str(response['resp_history'])))
+    db_insert = context.httpfuzzer_issues.insert().values(
+        new_issue=True,  # Boolean
+        scenario_id=str(response['scenario_id']),  # Text
+        req_headers=str(response['req_headers']),  # Blob
+        req_body=str(response['req_body']),  # Blob
+        url=str(response['url']),  # Text
+        req_method=str(response['req_method']),  # Text
+        server_protocol_error=response['server_protocol_error'],  # Boolean
+        server_timeout=response['server_timeout'],  # Boolean
+        server_error_text_detected=server_error_text_match,  # Boolean
+        resp_statuscode=str(response['resp_statuscode']),  # Text
+        resp_headers=str(response['resp_headers']),  # Blob
+        resp_body=str(response['resp_body']),  # Blob
+        resp_history=str(response['resp_history']))  # Blob
 
-    dbconn.commit()
+    dbconn.execute(db_insert)
     dbconn.close()
 
 
 def number_of_new_in_database(context):
     dbconn = open_database(context)
-    dbcursor = dbconn.cursor()
     if dbconn is None:  # No database in use
         return 0
-    dbcursor.execute("SELECT * FROM httpfuzzer_issues WHERE new_issue=1")
-    findings = len(dbcursor.fetchall())
+
+    db_select = sql.select([context.httpfuzzer_issues]).where(
+        context.httpfuzzer_issues.c.new_issue is True)
+
+    db_result = dbconn.execute(db_select)
+    findings = len(db_result.fetchall())
+    db_result.close()
     dbconn.close()
     return findings

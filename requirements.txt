@@ -1,4 +1,5 @@
 behave>=1.2.4
+SQLAlchemy==0.9.8
 requests>=2.2.1
 psycopg2>=2.5.2
 pytz>=2014.2

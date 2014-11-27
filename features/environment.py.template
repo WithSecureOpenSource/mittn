@@ -11,17 +11,18 @@ def before_all(context):
     # Common settings for more than one test type
     ####
 
-    # The following will have an effect if using a PostgreSQL database,
-    # otherwise unused
-    context.psql_dbname = "baseline"
-    context.psql_dbhost = "localhost"
-    context.psql_dbport = 5432
-    context.psql_dbuser = "mittn"
-    context.psql_dbpwdenv = "PGPASSWORD"  # Env var name that holds the password
+    # Database URI. This needs to be in a syntax that SQLAlchemy
+    # understands. Any database supported by SQLAlchemy will do.
+    # See http://docs.sqlalchemy.org/en/rel_0_9/core/engines.html#database-urls
 
-    # The following will have an effect if usinq an sqlite database,
-    # otherwise unused
-    context.sqlite_database = "/path/to/baseline.sqlite"
+    # Example for sqlite (replace with your absolute path):
+    context.dburl = 'sqlite:////path/to/database.sqlite'
+
+    # Example for PostgreSQL, with a password and forced TLS.
+    # Replace with your username, hostname and databasename.
+    # db_password = os.environ['PGPASSWORD']  # Retrieve password from env var
+    # context.dburl = 'postgresql+psycopg2://username:' + db_password +
+                      '@hostname/databasename?sslmode=require'   
 
     # The following is used as the proxy setting across tests
     # (Note that for headless scanning, the proxy address is a 
