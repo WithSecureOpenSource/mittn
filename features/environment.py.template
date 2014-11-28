@@ -21,8 +21,7 @@ def before_all(context):
     # Example for PostgreSQL, with a password and forced TLS.
     # Replace with your username, hostname and databasename.
     # db_password = os.environ['PGPASSWORD']  # Retrieve password from env var
-    # context.dburl = 'postgresql+psycopg2://username:' + db_password +
-                      '@hostname/databasename?sslmode=require'   
+    # context.dburl = 'postgresql+psycopg2://username:' + db_password + '@hostname/databasename?sslmode=require'   
 
     # The following is used as the proxy setting across tests
     # (Note that for headless scanning, the proxy address is a 

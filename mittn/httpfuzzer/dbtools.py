@@ -39,10 +39,10 @@ def open_database(context):
                                       Column('issue_no', types.Integer, primary_key=True, nullable=False),
                                       Column('scenario_id', types.Text),
                                       Column('url', types.Text),
-                                      Column('server_protocol_error', types.Boolean),
+                                      Column('server_protocol_error', types.Text),
                                       Column('server_timeout', types.Boolean),
                                       Column('server_error_text_detected', types.Boolean),
-                                      Column('server_error_text_match', types.Text),
+                                      Column('server_error_text_matched', types.Text),
                                       Column('req_method', types.Text),
                                       Column('req_headers', types.LargeBinary),
                                       Column('req_body', types.LargeBinary),
@@ -58,7 +58,7 @@ def open_database(context):
     return dbconn
 
 
-def known_false_positive(context, response, server_error_text_match=False):
+def known_false_positive(context, response, server_error_text_detected=False):
     """Check whether a finding already exists in the database (usually
     a "false positive" if it does exist)
 
@@ -79,7 +79,7 @@ def known_false_positive(context, response, server_error_text_match=False):
     # - It has the same scenario id, AND
     # - It has the same return status code from the server, AND
     # - It has the same timeout boolean value, AND
-    # - It has the same server error text match boolean value.
+    # - It has the same server error text detection boolean value.
 
     # Because each fuzz case is likely to be separate, we cannot store
     # all those. Two different fuzz cases that elicit a similar response are
@@ -91,10 +91,10 @@ def known_false_positive(context, response, server_error_text_match=False):
     db_select = sql.select([context.httpfuzzer_issues]).where(
         and_(
             context.httpfuzzer_issues.c.scenario_id == str(response['scenario_id']),  # Text
-            context.httpfuzzer_issues.c.server_protocol_error == response['server_protocol_error'],  # Boolean
+            context.httpfuzzer_issues.c.server_protocol_error == response['server_protocol_error'],  # Text
             context.httpfuzzer_issues.c.resp_statuscode == str(response['resp_statuscode']),  # Text
             context.httpfuzzer_issues.c.server_timeout == response['server_timeout'],  # Boolean
-            context.httpfuzzer_issues.c.server_error_text_detected == response['server_error_text_detected']))  # Boolean
+            context.httpfuzzer_issues.c.server_error_text_detected == server_error_text_detected))  # Boolean
 
     db_result = dbconn.execute(db_select)
 
@@ -108,7 +108,7 @@ def known_false_positive(context, response, server_error_text_match=False):
     return True
 
 
-def add_false_positive(context, response, server_error_text_match=False):
+def add_false_positive(context, response, server_error_text_detected=False):
     """Add a finding into the database as a new finding
 
     :param context: The Behave context
@@ -147,9 +147,10 @@ def add_false_positive(context, response, server_error_text_match=False):
         req_body=str(response['req_body']),  # Blob
         url=str(response['url']),  # Text
         req_method=str(response['req_method']),  # Text
-        server_protocol_error=response['server_protocol_error'],  # Boolean
+        server_protocol_error=response['server_protocol_error'],  # Text
         server_timeout=response['server_timeout'],  # Boolean
-        server_error_text_detected=server_error_text_match,  # Boolean
+        server_error_text_detected=server_error_text_detected,  # Boolean
+        server_error_text_matched=response['server_error_text_matched'],  # Text
         resp_statuscode=str(response['resp_statuscode']),  # Text
         resp_headers=str(response['resp_headers']),  # Blob
         resp_body=str(response['resp_body']),  # Blob
@@ -164,9 +165,10 @@ def number_of_new_in_database(context):
     if dbconn is None:  # No database in use
         return 0
 
-    db_select = sql.select([context.httpfuzzer_issues]).where(
-        context.httpfuzzer_issues.c.new_issue is True)
+    true_value = True  # We cannot use "is True" in the where clause?!?
 
+    db_select = sql.select([context.httpfuzzer_issues]).where(
+        context.httpfuzzer_issues.c.scenario_id == true_value)
     db_result = dbconn.execute(db_select)
     findings = len(db_result.fetchall())
     db_result.close()
