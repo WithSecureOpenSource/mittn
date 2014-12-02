@@ -58,22 +58,16 @@ def open_database(context):
     return dbconn
 
 
-def known_false_positive(context, response):
+def known_false_positive(context, response, server_error_text_detected=False):
     """Check whether a finding already exists in the database (usually
     a "false positive" if it does exist)
 
     :param context: The Behave context
     :param response: The server response data structure (see httptools.py)
+    :param server_error_text_match: Whether the server response matched some
+    of the error texts specified in the feature file (True or False)
     :return: True or False, depending on whether this is a known issue
     """
-
-    # These keys may not be present because they aren't part of
-    # the response dict Requests produces, but instead added by us.
-    # If this function is called without them, default to False.
-    if 'server_error_text_detected' not in response:
-        response['server_error_text_detected'] = False
-    if 'server_error_text_matched' not in response:
-        response['server_error_text_matched'] = ''
 
     dbconn = open_database(context)
     if dbconn is None:
@@ -100,7 +94,7 @@ def known_false_positive(context, response):
             context.httpfuzzer_issues.c.server_protocol_error == response['server_protocol_error'],  # Text
             context.httpfuzzer_issues.c.resp_statuscode == str(response['resp_statuscode']),  # Text
             context.httpfuzzer_issues.c.server_timeout == response['server_timeout'],  # Boolean
-            context.httpfuzzer_issues.c.server_error_text_detected == response['server_error_text_detected']))  # Boolean
+            context.httpfuzzer_issues.c.server_error_text_detected == server_error_text_detected))  # Boolean
 
     db_result = dbconn.execute(db_select)
 
@@ -114,21 +108,14 @@ def known_false_positive(context, response):
     return True
 
 
-def add_false_positive(context, response):
+def add_false_positive(context, response, server_error_text_detected=False):
     """Add a finding into the database as a new finding
 
     :param context: The Behave context
     :param response: The response data structure (see httptools.py)
+    :param server_error_text_match: Whether the response matched any strings
+    in the feature file (True or False)
     """
-
-    # These keys may not be present because they aren't part of
-    # the response dict Requests produces, but instead added by us.
-    # If this function is called without them, default to False.
-    if 'server_error_text_detected' not in response:
-        response['server_error_text_detected'] = False
-    if 'server_error_text_matched' not in response:
-        response['server_error_text_matched'] = ''
-
     dbconn = open_database(context)
     if dbconn is None:
         # There is no false positive db in use, and we cannot store the data,
@@ -162,7 +149,7 @@ def add_false_positive(context, response):
         req_method=str(response['req_method']),  # Text
         server_protocol_error=response['server_protocol_error'],  # Text
         server_timeout=response['server_timeout'],  # Boolean
-        server_error_text_detected=response['server_error_text_detected'],  # Boolean
+        server_error_text_detected=server_error_text_detected,  # Boolean
         server_error_text_matched=response['server_error_text_matched'],  # Text
         resp_statuscode=str(response['resp_statuscode']),  # Text
         resp_headers=str(response['resp_headers']),  # Blob

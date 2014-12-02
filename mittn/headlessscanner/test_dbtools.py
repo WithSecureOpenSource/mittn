@@ -50,7 +50,8 @@ class dbtools_test_case(unittest.TestCase):
                     'resp_body': 'resp_body',
                     'resp_history': 'resp_history'}
 
-        dbtools.add_false_positive(self.context, response)
+        dbtools.add_false_positive(self.context, response,
+                                   server_error_text_detected=False)
 
         # Connect directly to the database and check the data is there
         db_engine = sqlalchemy.create_engine(self.context.dburl)
@@ -98,12 +99,14 @@ class dbtools_test_case(unittest.TestCase):
                     'resp_history': 'resp_history'}
 
         # Add one, expect count to be 1
-        dbtools.add_false_positive(self.context, response)
+        dbtools.add_false_positive(self.context, response,
+                                   server_error_text_detected=False)
         self.assertEqual(dbtools.number_of_new_in_database(self.context),
                          1, "After adding one, no one finding in database")
 
         # Add a second one, expect count to be 2
-        dbtools.add_false_positive(self.context, response)
+        dbtools.add_false_positive(self.context, response,
+                                   server_error_text_detected=False)
         self.assertEqual(dbtools.number_of_new_in_database(self.context),
                          2, "After adding two, no two findings in db")
 
@@ -124,49 +127,61 @@ class dbtools_test_case(unittest.TestCase):
                     'resp_history': 'resp_history'}
 
         # First add one false positive and try checking against it
-        dbtools.add_false_positive(self.context, response)
+        dbtools.add_false_positive(self.context, response,
+                                   server_error_text_detected=False)
 
         self.assertEqual(dbtools.known_false_positive(self.context,
-                                                      response),
+                                                      response,
+                                                      server_error_text_detected=False),
                          True, "Duplicate false positive not detected")
 
         # Change one of the differentiating fields, and test, and
         # add the tested one to the database.
         response['scenario_id'] = '2'  # Non-duplicate
         self.assertEqual(dbtools.known_false_positive(self.context,
-                                                      response),
+                                                      response,
+                                                      server_error_text_detected=False),
                          False, "Not a duplicate: scenario_id different")
-        dbtools.add_false_positive(self.context, response)
+        dbtools.add_false_positive(self.context, response,
+                                   server_error_text_detected=False)
 
         # Repeat for all the differentiating fields
         response['server_protocol_error'] = 'Error text'
         self.assertEqual(dbtools.known_false_positive(self.context,
-                                                      response),
+                                                      response,
+                                                      server_error_text_detected=False),
                          False, "Not a duplicate: server_protocol_error different")
-        dbtools.add_false_positive(self.context, response)
+        dbtools.add_false_positive(self.context, response,
+                                   server_error_text_detected=False)
 
         response['resp_statuscode'] = '500'
         self.assertEqual(dbtools.known_false_positive(self.context,
-                                                      response),
+                                                      response,
+                                                      server_error_text_detected=False),
                          False, "Not a duplicate: resp_statuscode different")
-        dbtools.add_false_positive(self.context, response)
+        dbtools.add_false_positive(self.context, response,
+                                   server_error_text_detected=False)
 
         response['server_timeout'] = True
         self.assertEqual(dbtools.known_false_positive(self.context,
-                                                      response),
+                                                      response,
+                                                      server_error_text_detected=False),
                          False, "Not a duplicate: server_timeout different")
-        dbtools.add_false_positive(self.context, response)
+        dbtools.add_false_positive(self.context, response,
+                                   server_error_text_detected=False)
 
-        response['server_error_text_detected'] = True
         self.assertEqual(dbtools.known_false_positive(self.context,
-                                                      response),
+                                                      response,
+                                                      server_error_text_detected=True),
                          False, "Not a duplicate: server_error_text_detected different")
-        dbtools.add_false_positive(self.context, response)
+        dbtools.add_false_positive(self.context, response,
+                                   server_error_text_detected=True)
 
         # Finally, test the last one again twice, now it ought to be
         # reported back as a duplicate
         self.assertEqual(dbtools.known_false_positive(self.context,
-                                                      response),
+                                                      response,
+                                                      server_error_text_detected=True),
                          True, "A duplicate case not detected")
 
 

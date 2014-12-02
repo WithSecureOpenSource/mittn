@@ -20,46 +20,20 @@ import logging
 import psycopg2
 import os
 from mittn.headlessscanner.proxy_comms import *
+import mittn.headlessscanner.dbtools as scandb
 # Import positive test scenario implementations
 from features.scenarios import *
 
 
-@given(u'a PostgreSQL baseline database')
+@given(u'a baseline database for scanner findings')
 def step_impl(context):
-    """Test that we can connect to a database, and make a note that we're using Postgres"""
-    context.db = "postgres"
-    if os.getenv(context.psql_dbpwdenv) is None:
-        assert False, "Password for %s not found in environment variable %s" % (
-            context.psql_dbuser, context.psql_dbpwdenv)
-    try:
-        dbconn = psycopg2.connect(database=context.psql_dbname,
-                                  user=context.psql_dbuser,
-                                  password=os.environ[context.psql_dbpwdenv],
-                                  host=context.psql_dbhost,
-                                  port=int(context.psql_dbport),
-                                  sslmode='require')
-        dbconn.close()
-        assert True
-    except psycopg2.Error as error:
-        assert False, "Cannot connect to the PostgreSQL database (sslmode=require) %s on %s:%s as user %s: %s. Check environment.py." % (
-            context.psql_dbname, context.psql_dbhost, context.psql_dbport, context.psql_dbuser, error)
-
-
-@given(u'an sqlite baseline database')
-def step_impl(context):
-    """Test that we can open a database, and make a note that we're using Postgres"""
-    context.db = "sqlite"
-    try:
-        with open(context.sqlite_database) as handle:  # Does file exist?
-            handle.close()
-            dbconn = sqlite3.connect(context.sqlite_database)  # Is it an sqlite database?
-            dbcursor = dbconn.cursor()
-            dbcursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-            dbconn.close()
-            assert True
-    except (IOError, sqlite3.DatabaseError):
-        assert False, "sqlite database '%s' not found, or not a database. Check environment.py." % context.sqlite_database
-
+    """Test that we can connect to a database. As a side effect, open_database(9 also creates the necessary table(s) that are required."""
+    if hasattr(context, 'dburl') is False:
+        assert False, "Database URI not specified"
+    dbconn = open_database(context)
+    if dbconn is None:
+        assert False, "Cannot open database %s" % context.dburl
+    dbconn.close()
 
 @given(u'a working Burp Suite installation')
 def step_impl(context):
