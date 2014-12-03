@@ -88,23 +88,23 @@ class CustomAuth(auth.AuthBase):
         # leave this as is.
         ####
 
-        if hasattr(self, 'cached_authenticator') is False or self.cached_authenticator is None:
+        if hasattr(self, 'cached_session') is False or self.cached_session is None:
 
             # Here, perform any auth steps necessary. Store your token or other
-            # authentication result in self.cached_authenticator.
+            # authentication result in self.cached_session.
 
             # Example:
-            # self.cached_authenticator = your_session_token
+            # self.cached_session = your_session_token
             pass
 
-        # Here, modify the request using self.cached_authenticator.
+        # Here, modify the request using self.cached_session.
 
         # Example:
-        # request.headers['X-Session'] = self.cached_authenticator
+        # request.headers['X-Session'] = self.cached_session
 
         return request
 
     def reset_authenticator(self):
         """A convenience function to request a new authentication to take place
         """
-        self.cached_authenticator = None
+        self.cached_session = None
