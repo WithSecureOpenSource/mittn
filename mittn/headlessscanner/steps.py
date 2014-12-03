@@ -8,7 +8,6 @@ Burp and Burp Suite are trademarks of Portswigger, Ltd.
 """
 
 from behave import *
-import sqlite3
 import shlex
 import subprocess
 import select
@@ -17,7 +16,6 @@ import json
 import time
 import re
 import logging
-import psycopg2
 import os
 from mittn.headlessscanner.proxy_comms import *
 import mittn.headlessscanner.dbtools as scandb
@@ -30,7 +28,7 @@ def step_impl(context):
     """Test that we can connect to a database. As a side effect, open_database(9 also creates the necessary table(s) that are required."""
     if hasattr(context, 'dburl') is False:
         assert False, "Database URI not specified"
-    dbconn = open_database(context)
+    dbconn = scandb.open_database(context)
     if dbconn is None:
         assert False, "Cannot open database %s" % context.dburl
     dbconn.close()
@@ -173,72 +171,18 @@ def step_impl(context, timeout):
 def step_impl(context):
     """Check whether the findings reported by Burp have already been found earlier"""
     scanissues = context.results
-    dbconn = None
-    if context.db == "sqlite":
-        database = context.sqlite_database
-        try:
-            dbconn = sqlite3.connect(database)
-            dbcursor = dbconn.cursor()
-        except (IOError, sqlite3.DatabaseError):
-            assert False, "sqlite database '%s' not found, or not a database" % database
-    if context.db == "postgres":
-        try:
-            dbconn = psycopg2.connect(database=context.psql_dbname,
-                                      user=context.psql_dbuser,
-                                      password=os.environ[context.psql_dbpwdenv],
-                                      host=context.psql_dbhost,
-                                      port=int(context.psql_dbport),
-                                      sslmode='require')
-            dbcursor = dbconn.cursor()
-        except psycopg2.Error as error:
-            assert False, "Cannot connect to the PostgreSQL database %s on %s:%s as user %s: %s" % (
-                context.psql_dbname, context.psql_dbhost, context.psql_dbport, context.psql_dbuser, error.pgerror)
-    if dbconn is None:
-        assert False, "Database type not defined. Declare a database in the Gherkin file."
+
     # Go through each issue, and add issues that aren't in the database
     # into the database. If we've found new issues, assert False.
-    # Issues will be differentiated by scenario_id (=test case id, e.g., which
-    # Selenium script resulted in it), URL, and issue type.
 
-    unprocessed_items = 0
     new_items = 0
     for issue in scanissues:
-        # First check whether this is an unprocessed old finding
-        if context.db == "sqlite":
-            dbcursor.execute(
-                "SELECT * FROM headlessscanner_issues WHERE scenario_id=? AND url=? AND issuetype=? AND new_issue=1",
-                (str(context.scenario_id), issue['url'], str(issue['issuetype'])))
-        if context.db == "postgres":
-            dbcursor.execute(
-                "select * from headlessscanner_issues where scenario_id=%s and url=%s and issuetype=%s and new_issue=1",
-                (str(context.scenario_id), issue['url'], str(issue['issuetype'])))
-        if len(dbcursor.fetchall()) != 0:
-            unprocessed_items += 1
-
-        # Then check whether this is a new finding, and if yes, add
-        if context.db == "sqlite":
-            dbcursor.execute("SELECT * FROM headlessscanner_issues WHERE scenario_id=? AND url=? AND issuetype=?",
-                             (str(context.scenario_id), issue['url'], str(issue['issuetype'])))
-        if context.db == "postgres":
-            dbcursor.execute("select * from headlessscanner_issues where scenario_id=%s and url=%s and issuetype=%s",
-                             (str(context.scenario_id), issue['url'], str(issue['issuetype'])))
-        if len(dbcursor.fetchall()) == 0:
+        if scandb.known_false_positive(context, issue) is False:
             new_items += 1
-            if context.db == "sqlite":
-                dbcursor.execute(
-                    "INSERT INTO headlessscanner_issues (new_issue, scenario_id, url, severity, issuetype, issuename, issuedetail, confidence, host, port, protocol, messagejson) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    (1, str(context.scenario_id), issue['url'], issue['severity'], str(issue['issuetype']),
-                     issue['issuename'], issue['issuedetail'], issue['confidence'], issue['host'], str(issue['port']),
-                     issue['protocol'], json.dumps(issue['messages'])))
-            if context.db == "postgres":
-                dbcursor.execute(
-                    "insert into headlessscanner_issues (new_issue, scenario_id, url, severity, issuetype, issuename, issuedetail, confidence, host, port, protocol, messagejson) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                    (1, str(context.scenario_id), issue['url'], issue['severity'], str(issue['issuetype']),
-                     issue['issuename'], issue['issuedetail'], issue['confidence'], issue['host'], str(issue['port']),
-                     issue['protocol'], json.dumps(issue['messages'])))
-            dbconn.commit()
-    dbconn.close()
-    if new_items > 0 or unprocessed_items > 0:
-        assert False, "New issue(s) were found in scan. %s new issue(s), %s older, still unprocessed, issue(s)." % (
-            new_items, unprocessed_items)
+            scandb.add_false_positive(context, issue)
+
+    unprocessed_items = scandb.number_of_new_in_database(context)
+
+    if unprocessed_items > 0:
+        assert False, "Unprocessed findings in database. %s new issue(s), total %s issue(s)." % (new_items, unprocessed_items)
     assert True

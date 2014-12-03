@@ -2,7 +2,9 @@ import unittest
 import tempfile
 import uuid
 import os
-import mittn.httpfuzzer.dbtools as dbtools
+import mittn.headlessscanner.dbtools as dbtools
+import datetime
+import socket
 import sqlalchemy
 from sqlalchemy import create_engine, Table, Column, MetaData, exc, types
 
@@ -36,152 +38,129 @@ class dbtools_test_case(unittest.TestCase):
     def test_add_false_positive(self):
         # Add a false positive to database and check that all fields
         # get populated and can be compared back originals
-        response = {'scenario_id': '1',
-                    'req_headers': 'headers',
-                    'req_body': 'body',
-                    'url': 'url',
-                    'req_method': 'method',
-                    'server_protocol_error': None,
-                    'server_timeout': False,
-                    'server_error_text_detected': False,
-                    'server_error_text_matched': 'matched_text',
-                    'resp_statuscode': 'statuscode',
-                    'resp_headers': 'resp_headers',
-                    'resp_body': 'resp_body',
-                    'resp_history': 'resp_history'}
+        issue = {'scenario_id': '1',
+                 'test_runner_host': socket.getfqdn(),
+                 'url': 'url',
+                 'severity': 'severity',
+                 'issuetype': 'issuetype',
+                 'issuename': 'issuename',
+                 'issuedetail': 'issuedetail',
+                 'confidence': 'confidence',
+                 'host': 'host',
+                 'port': 'port',
+                 'protocol': 'protocol',
+                 'messagejson': 'messagejson'}
 
-        dbtools.add_false_positive(self.context, response,
-                                   server_error_text_detected=False)
+        dbtools.add_false_positive(self.context, issue)
 
         # Connect directly to the database and check the data is there
         db_engine = sqlalchemy.create_engine(self.context.dburl)
         dbconn = db_engine.connect()
         db_metadata = sqlalchemy.MetaData()
-        httpfuzzer_issues = Table('httpfuzzer_issues', db_metadata,
-                                  Column('new_issue', types.Boolean),
-                                  Column('issue_no', types.Integer, primary_key=True, nullable=False),
-                                  Column('scenario_id', types.Text),
-                                  Column('url', types.Text),
-                                  Column('server_protocol_error', types.Text),
-                                  Column('server_timeout', types.Boolean),
-                                  Column('server_error_text_detected', types.Boolean),
-                                  Column('server_error_text_matched', types.Text),
-                                  Column('req_method', types.Text),
-                                  Column('req_headers', types.LargeBinary),
-                                  Column('req_body', types.LargeBinary),
-                                  Column('resp_statuscode', types.Text),
-                                  Column('resp_headers', types.LargeBinary),
-                                  Column('resp_body', types.LargeBinary),
-                                  Column('resp_history', types.LargeBinary))
-        db_select = sqlalchemy.sql.select([httpfuzzer_issues])
+        headlessscanner_issues = Table('headlessscanner_issues',
+                                       db_metadata,
+                                       Column('new_issue', types.Boolean),
+                                       Column('issue_no', types.Integer, primary_key=True, nullable=False),  # Implicit autoincrement
+                                       Column('timestamp', types.DateTime(timezone=True)),
+                                       Column('test_runner_host', types.Text),
+                                       Column('scenario_id', types.Text),
+                                       Column('url', types.Text),
+                                       Column('severity', types.Text),
+                                       Column('issuetype', types.Text),
+                                       Column('issuename', types.Text),
+                                       Column('issuedetail', types.Text),
+                                       Column('confidence', types.Text),
+                                       Column('host', types.Text),
+                                       Column('port', types.Text),
+                                       Column('protocol', types.Text),
+                                       Column('messagejson', types.LargeBinary))
+        db_select = sqlalchemy.sql.select([headlessscanner_issues])
         db_result = dbconn.execute(db_select)
         result = db_result.fetchone()
-        for key, value in response.iteritems():
+        for key, value in issue.iteritems():
             self.assertEqual(result[key], value,
                              '%s not found in database after add' % key)
+        self.assertEqual(result['test_runner_host'], socket.getfqdn(),
+                         'Test runner host name not correct in database')
+        self.assertLessEqual(result['timestamp'], datetime.datetime.utcnow(),
+                             'Timestamp not correctly stored in database')
         dbconn.close()
 
     def test_number_of_new_false_positives(self):
         # Add a couple of false positives to database as new issues,
         # and check that the they're counted properly
-        response = {'scenario_id': '1',
-                    'req_headers': 'headers',
-                    'req_body': 'body',
-                    'url': 'url',
-                    'req_method': 'method',
-                    'server_protocol_error': None,
-                    'server_timeout': False,
-                    'server_error_text_detected': False,
-                    'server_error_text_matched': 'matched_text',
-                    'resp_statuscode': 'statuscode',
-                    'resp_headers': 'resp_headers',
-                    'resp_body': 'resp_body',
-                    'resp_history': 'resp_history'}
+        issue = {'scenario_id': '1',
+                 'timestamp': datetime.datetime.utcnow(),
+                 'test_runner_host': 'localhost',
+                 'url': 'url',
+                 'severity': 'severity',
+                 'issuetype': 'issuetype',
+                 'issuename': 'issuename',
+                 'issuedetail': 'issuedetail',
+                 'confidence': 'confidence',
+                 'host': 'host',
+                 'port': 'port',
+                 'protocol': 'protocol',
+                 'messagejson': 'messagejson'}
 
         # Add one, expect count to be 1
-        dbtools.add_false_positive(self.context, response,
-                                   server_error_text_detected=False)
+        dbtools.add_false_positive(self.context, issue)
         self.assertEqual(dbtools.number_of_new_in_database(self.context),
-                         1, "After adding one, no one finding in database")
+                         1, "After adding one, expect one finding in database")
 
         # Add a second one, expect count to be 2
-        dbtools.add_false_positive(self.context, response,
-                                   server_error_text_detected=False)
+        dbtools.add_false_positive(self.context, issue)
         self.assertEqual(dbtools.number_of_new_in_database(self.context),
-                         2, "After adding two, no two findings in db")
+                         2, "After adding two, expect two findings in db")
 
     def test_false_positive_detection(self):
         # Test whether false positives in database are identified properly
-        response = {'scenario_id': '1',
-                    'req_headers': 'headers',
-                    'req_body': 'body',
-                    'url': 'url',
-                    'req_method': 'method',
-                    'server_protocol_error': False,
-                    'server_timeout': False,
-                    'server_error_text_detected': False,
-                    'server_error_text_matched': 'matched_text',
-                    'resp_statuscode': 'statuscode',
-                    'resp_headers': 'resp_headers',
-                    'resp_body': 'resp_body',
-                    'resp_history': 'resp_history'}
+        issue = {'scenario_id': '1',
+                 'timestamp': datetime.datetime.utcnow(),
+                 'test_runner_host': 'localhost',
+                 'url': 'url',
+                 'severity': 'severity',
+                 'issuetype': 'issuetype',
+                 'issuename': 'issuename',
+                 'issuedetail': 'issuedetail',
+                 'confidence': 'confidence',
+                 'host': 'host',
+                 'port': 'port',
+                 'protocol': 'protocol',
+                 'messagejson': 'messagejson'}
 
         # First add one false positive and try checking against it
-        dbtools.add_false_positive(self.context, response,
-                                   server_error_text_detected=False)
+        dbtools.add_false_positive(self.context, issue)
 
         self.assertEqual(dbtools.known_false_positive(self.context,
-                                                      response,
-                                                      server_error_text_detected=False),
+                                                      issue),
                          True, "Duplicate false positive not detected")
 
         # Change one of the differentiating fields, and test, and
         # add the tested one to the database.
-        response['scenario_id'] = '2'  # Non-duplicate
+        issue['scenario_id'] = '2'  # Non-duplicate
         self.assertEqual(dbtools.known_false_positive(self.context,
-                                                      response,
-                                                      server_error_text_detected=False),
+                                                      issue),
                          False, "Not a duplicate: scenario_id different")
-        dbtools.add_false_positive(self.context, response,
-                                   server_error_text_detected=False)
+        dbtools.add_false_positive(self.context, issue)
 
         # Repeat for all the differentiating fields
-        response['server_protocol_error'] = 'Error text'
+        issue['url'] = 'another url'
         self.assertEqual(dbtools.known_false_positive(self.context,
-                                                      response,
-                                                      server_error_text_detected=False),
-                         False, "Not a duplicate: server_protocol_error different")
-        dbtools.add_false_positive(self.context, response,
-                                   server_error_text_detected=False)
+                                                      issue),
+                         False, "Not a duplicate: url different")
+        dbtools.add_false_positive(self.context, issue)
 
-        response['resp_statuscode'] = '500'
+        issue['issuetype'] = 'foo'
         self.assertEqual(dbtools.known_false_positive(self.context,
-                                                      response,
-                                                      server_error_text_detected=False),
-                         False, "Not a duplicate: resp_statuscode different")
-        dbtools.add_false_positive(self.context, response,
-                                   server_error_text_detected=False)
-
-        response['server_timeout'] = True
-        self.assertEqual(dbtools.known_false_positive(self.context,
-                                                      response,
-                                                      server_error_text_detected=False),
-                         False, "Not a duplicate: server_timeout different")
-        dbtools.add_false_positive(self.context, response,
-                                   server_error_text_detected=False)
-
-        self.assertEqual(dbtools.known_false_positive(self.context,
-                                                      response,
-                                                      server_error_text_detected=True),
-                         False, "Not a duplicate: server_error_text_detected different")
-        dbtools.add_false_positive(self.context, response,
-                                   server_error_text_detected=True)
+                                                      issue),
+                         False, "Not a duplicate: issuetype different")
+        dbtools.add_false_positive(self.context, issue)
 
         # Finally, test the last one again twice, now it ought to be
         # reported back as a duplicate
         self.assertEqual(dbtools.known_false_positive(self.context,
-                                                      response,
-                                                      server_error_text_detected=True),
+                                                      issue),
                          True, "A duplicate case not detected")
 
 

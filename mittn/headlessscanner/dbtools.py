@@ -6,6 +6,9 @@ See LICENSE for details
 """
 
 import os
+import datetime
+import socket
+import json
 from sqlalchemy import create_engine, Table, Column, MetaData, exc, types
 from sqlalchemy import sql, and_
 
@@ -29,27 +32,27 @@ def open_database(context):
         assert False, "Cannot connect to database '%s'" % context.dburl
 
     # Set up the database table to store new findings and false positives.
-    # We use LargeBinary to store those fields that could contain somehow
-    # bad Unicode, just in case some component downstream tries to parse
-    # a string provided as Unicode.
+    # We use LargeBinary to store the message, because it can potentially
+    # be big.
     db_metadata = MetaData()
     db_metadata.bind = db_engine
-    context.httpfuzzer_issues = Table('httpfuzzer_issues', db_metadata,
-                                      Column('new_issue', types.Boolean),
-                                      Column('issue_no', types.Integer, primary_key=True, nullable=False),
-                                      Column('scenario_id', types.Text),
-                                      Column('url', types.Text),
-                                      Column('server_protocol_error', types.Text),
-                                      Column('server_timeout', types.Boolean),
-                                      Column('server_error_text_detected', types.Boolean),
-                                      Column('server_error_text_matched', types.Text),
-                                      Column('req_method', types.Text),
-                                      Column('req_headers', types.LargeBinary),
-                                      Column('req_body', types.LargeBinary),
-                                      Column('resp_statuscode', types.Text),
-                                      Column('resp_headers', types.LargeBinary),
-                                      Column('resp_body', types.LargeBinary),
-                                      Column('resp_history', types.LargeBinary))
+    context.headlessscanner_issues = Table('headlessscanner_issues',
+                                           db_metadata,
+                                           Column('new_issue', types.Boolean),
+                                           Column('issue_no', types.Integer, primary_key=True, nullable=False),  # Implicit autoincrement
+                                           Column('timestamp', types.DateTime(timezone=True)),
+                                           Column('test_runner_host', types.Text),
+                                           Column('scenario_id', types.Text),
+                                           Column('url', types.Text),
+                                           Column('severity', types.Text),
+                                           Column('issuetype', types.Text),
+                                           Column('issuename', types.Text),
+                                           Column('issuedetail', types.Text),
+                                           Column('confidence', types.Text),
+                                           Column('host', types.Text),
+                                           Column('port', types.Text),
+                                           Column('protocol', types.Text),
+                                           Column('messagejson', types.LargeBinary))
 
     # Create the table if it doesn't exist
     # and otherwise no effect
@@ -58,14 +61,12 @@ def open_database(context):
     return dbconn
 
 
-def known_false_positive(context, response, server_error_text_detected=False):
+def known_false_positive(context, issue):
     """Check whether a finding already exists in the database (usually
     a "false positive" if it does exist)
 
     :param context: The Behave context
-    :param response: The server response data structure (see httptools.py)
-    :param server_error_text_match: Whether the server response matched some
-    of the error texts specified in the feature file (True or False)
+    :param issue: A finding from the scanner (see steps.py)
     :return: True or False, depending on whether this is a known issue
     """
 
@@ -75,26 +76,15 @@ def known_false_positive(context, response, server_error_text_detected=False):
         return False
 
     # Check whether we already know about this. A finding is a duplicate if:
-    # - It has the same protocol level error message (or None) from Requests AND
     # - It has the same scenario id, AND
-    # - It has the same return status code from the server, AND
-    # - It has the same timeout boolean value, AND
-    # - It has the same server error text detection boolean value.
+    # - It was found in the same URL, AND
+    # - It has the same issue type.
 
-    # Because each fuzz case is likely to be separate, we cannot store
-    # all those. Two different fuzz cases that elicit a similar response are
-    # indistinguishable in this regard and only the one triggering payload
-    # gets stored here. This does not always model reality. If fuzzing a
-    # field triggers an issue, you should thoroughly fuzz-test that field
-    # separately.
-
-    db_select = sql.select([context.httpfuzzer_issues]).where(
+    db_select = sql.select([context.headlessscanner_issues]).where(
         and_(
-            context.httpfuzzer_issues.c.scenario_id == str(response['scenario_id']),  # Text
-            context.httpfuzzer_issues.c.server_protocol_error == response['server_protocol_error'],  # Text
-            context.httpfuzzer_issues.c.resp_statuscode == str(response['resp_statuscode']),  # Text
-            context.httpfuzzer_issues.c.server_timeout == response['server_timeout'],  # Boolean
-            context.httpfuzzer_issues.c.server_error_text_detected == server_error_text_detected))  # Boolean
+            context.headlessscanner_issues.c.scenario_id == context.scenario_id,  # Text
+            context.headlessscanner_issues.c.url == issue['url'],  # Text
+            context.headlessscanner_issues.c.issuetype == issue['issuetype']))  # Text
 
     db_result = dbconn.execute(db_select)
 
@@ -108,53 +98,37 @@ def known_false_positive(context, response, server_error_text_detected=False):
     return True
 
 
-def add_false_positive(context, response, server_error_text_detected=False):
+def add_false_positive(context, issue):
     """Add a finding into the database as a new finding
 
     :param context: The Behave context
-    :param response: The response data structure (see httptools.py)
-    :param server_error_text_match: Whether the response matched any strings
-    in the feature file (True or False)
+    :param response: An issue data structure (see steps.py)
     """
     dbconn = open_database(context)
     if dbconn is None:
         # There is no false positive db in use, and we cannot store the data,
-        # so we will assert a failure. Long assert messages seem to fail,
-        # so we truncate uri and submission to 200 bytes.
-        truncated_submission = (
-            response['req_body'][:200] + "... (truncated)") if len(
-            response['req_body']) > 210 else response['req_body']
-        truncated_uri = (response['url'][:200] + "... (truncated)") if len(
-            response['url']) > 210 else response['uri']
-        assert False, "Response from server failed a check, and no errors " \
-                      "database is in use. Scenario id = %s, error = %s, " \
-                      "timeout = %s, status = %s, URI = %s, req_method = %s, " \
-                      "submission = %s" % (
-                          response['scenario_id'],
-                          response['server_protocol_error'],
-                          response['server_timeout'],
-                          response['resp_statuscode'],
-                          truncated_uri,
-                          response['req_method'],
-                          truncated_submission)
+        # so we will assert a failure.
+        assert False, "Issues were found in scan, but no false positive database is in use."
 
     # Add the finding into the database
 
-    db_insert = context.httpfuzzer_issues.insert().values(
+    db_insert = context.headlessscanner_issues.insert().values(
         new_issue=True,  # Boolean
-        scenario_id=str(response['scenario_id']),  # Text
-        req_headers=str(response['req_headers']),  # Blob
-        req_body=str(response['req_body']),  # Blob
-        url=str(response['url']),  # Text
-        req_method=str(response['req_method']),  # Text
-        server_protocol_error=response['server_protocol_error'],  # Text
-        server_timeout=response['server_timeout'],  # Boolean
-        server_error_text_detected=server_error_text_detected,  # Boolean
-        server_error_text_matched=response['server_error_text_matched'],  # Text
-        resp_statuscode=str(response['resp_statuscode']),  # Text
-        resp_headers=str(response['resp_headers']),  # Blob
-        resp_body=str(response['resp_body']),  # Blob
-        resp_history=str(response['resp_history']))  # Blob
+        # The result from Burp Extender does not include a timestamp,
+        # so we add the current time
+        timestamp=datetime.datetime.utcnow(),  # DateTime
+        test_runner_host=socket.gethostbyname(socket.getfqdn()),  # Text
+        scenario_id=context.scenario_id,  # Text
+        url=issue['url'],  # Text
+        severity=issue['severity'],  # Text
+        issuetype=issue['issuetype'],  # Text
+        issuename=issue['issuename'],  # Text
+        issuedetail=issue['issuedetail'],  # Text
+        confidence=issue['confidence'],  # Text
+        host=issue['host'],  # Text
+        port=issue['port'],  # Text
+        protocol=issue['protocol'],  # Text
+        messagejson=json.dumps(issue['messages']))  # Blob
 
     dbconn.execute(db_insert)
     dbconn.close()
@@ -165,10 +139,10 @@ def number_of_new_in_database(context):
     if dbconn is None:  # No database in use
         return 0
 
-    true_value = True  # We cannot use "is True" in the where clause?!?
+    true_value = True  # SQLAlchemy cannot have "is True" in where clause
 
-    db_select = sql.select([context.httpfuzzer_issues]).where(
-        context.httpfuzzer_issues.c.scenario_id == true_value)
+    db_select = sql.select([context.headlessscanner_issues]).where(
+        context.headlessscanner_issues.c.new_issue == true_value)
     db_result = dbconn.execute(db_select)
     findings = len(db_result.fetchall())
     db_result.close()

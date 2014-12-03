@@ -6,6 +6,7 @@ See LICENSE for details
 """
 
 import os
+import socket  # For getting hostname where we're running on
 from sqlalchemy import create_engine, Table, Column, MetaData, exc, types
 from sqlalchemy import sql, and_
 
@@ -37,6 +38,8 @@ def open_database(context):
     context.httpfuzzer_issues = Table('httpfuzzer_issues', db_metadata,
                                       Column('new_issue', types.Boolean),
                                       Column('issue_no', types.Integer, primary_key=True, nullable=False),
+                                      Column('timestamp', types.DateTime(timezone=True)),
+                                      Column('test_runner_host', types.Text),
                                       Column('scenario_id', types.Text),
                                       Column('url', types.Text),
                                       Column('server_protocol_error', types.Text),
@@ -155,6 +158,8 @@ def add_false_positive(context, response):
 
     db_insert = context.httpfuzzer_issues.insert().values(
         new_issue=True,  # Boolean
+        timestamp=response['timestamp'],  # DateTime
+        test_runner_host=socket.gethostbyname(socket.getfqdn()),  # Text
         scenario_id=str(response['scenario_id']),  # Text
         req_headers=str(response['req_headers']),  # Blob
         req_body=str(response['req_body']),  # Blob
@@ -178,10 +183,10 @@ def number_of_new_in_database(context):
     if dbconn is None:  # No database in use
         return 0
 
-    true_value = True  # We cannot use "is True" in the where clause?!?
+    true_value = True  # SQLAlchemy cannot have "is True" in where clause
 
     db_select = sql.select([context.httpfuzzer_issues]).where(
-        context.httpfuzzer_issues.c.scenario_id == true_value)
+        context.httpfuzzer_issues.c.new_issue == true_value)
     db_result = dbconn.execute(db_select)
     findings = len(db_result.fetchall())
     db_result.close()

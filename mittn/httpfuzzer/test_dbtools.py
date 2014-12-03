@@ -2,6 +2,8 @@ import unittest
 import tempfile
 import uuid
 import os
+import datetime
+import socket
 import mittn.httpfuzzer.dbtools as dbtools
 import sqlalchemy
 from sqlalchemy import create_engine, Table, Column, MetaData, exc, types
@@ -40,6 +42,7 @@ class dbtools_test_case(unittest.TestCase):
                     'req_headers': 'headers',
                     'req_body': 'body',
                     'url': 'url',
+                    'timestamp': datetime.datetime.utcnow(),
                     'req_method': 'method',
                     'server_protocol_error': None,
                     'server_timeout': False,
@@ -59,6 +62,8 @@ class dbtools_test_case(unittest.TestCase):
         httpfuzzer_issues = Table('httpfuzzer_issues', db_metadata,
                                   Column('new_issue', types.Boolean),
                                   Column('issue_no', types.Integer, primary_key=True, nullable=False),
+                                  Column('timestamp', types.DateTime(timezone=True)),
+                                  Column('test_runner_host', types.Text),
                                   Column('scenario_id', types.Text),
                                   Column('url', types.Text),
                                   Column('server_protocol_error', types.Text),
@@ -78,6 +83,10 @@ class dbtools_test_case(unittest.TestCase):
         for key, value in response.iteritems():
             self.assertEqual(result[key], value,
                              '%s not found in database after add' % key)
+        self.assertEqual(result['test_runner_host'], socket.getfqdn(),
+                         'Test runner host name not correct in database')
+        self.assertLessEqual(result['timestamp'], datetime.datetime.utcnow(),
+                             'Timestamp not correctly stored in database')
         dbconn.close()
 
     def test_number_of_new_false_positives(self):
@@ -88,6 +97,7 @@ class dbtools_test_case(unittest.TestCase):
                     'req_body': 'body',
                     'url': 'url',
                     'req_method': 'method',
+                    'timestamp': datetime.datetime.utcnow(),
                     'server_protocol_error': None,
                     'server_timeout': False,
                     'server_error_text_detected': False,
@@ -114,6 +124,7 @@ class dbtools_test_case(unittest.TestCase):
                     'req_body': 'body',
                     'url': 'url',
                     'req_method': 'method',
+                    'timestamp': datetime.datetime.utcnow(),
                     'server_protocol_error': False,
                     'server_timeout': False,
                     'server_error_text_detected': False,
