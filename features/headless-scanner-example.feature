@@ -8,9 +8,7 @@ Feature: Do a headless active scan
   # configuration.
 
   Background: Test that the database and Burp Suite are configured correctly
-    Given an sqlite baseline database
-    # Alternatively:
-    # Given a PostgreSQL baseline database
+    Given a baseline database for scanner findings
     And a working Burp Suite installation
 
   # You need to implement the actual test scenarios that cause HTTP
