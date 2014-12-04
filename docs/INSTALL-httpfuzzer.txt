@@ -12,12 +12,13 @@ project or send a pull request with the patch.
 HTTP Injector / Fuzzer Concept
 ==============================
 
-The HTTP Injector / Fuzzer takes an HTTP API (form submissions, JSON
+The HTTP Injector / Fuzzer takes an HTTP API (form submissions or JSON
 submissions) and injects malformed input to each of the values and
 parameters in the submission. The malformed input can come from a
 library of static, hand-crafted inputs, or from a fuzzer (currently,
-Radamsa from the University of Oulu, Finland). When using the fuzzer,
-the malformed inputs are created based on valid examples you provide.
+generated using Radamsa from the University of Oulu, Finland). When
+using the fuzzer, the malformed inputs are created based on valid
+examples you provide.
 
 Servers that fail to process malformed inputs may exhibit a range of
 responses:
@@ -79,9 +80,9 @@ For details, read on.
 Software requirements
 =====================
 
-1. Python package requirements in addition to the standard libraries:
-   psycopg2, requests, behave. You can install the requirements using
-   pip:
+1. Python package requirements in addition to the standard libraries
+   are listed in requirements.txt. You can install the requirements
+   using pip:
 
      pip install -r requirements.txt
 
@@ -103,10 +104,8 @@ Environment requirements
 
 - New findings are added into an SQL database, which holds the
   information about known false positives, so that they are not
-  reported during subsequent runs. The system supports local
-  file-based sqlite databases that require no credentials, and
-  database servers running PostgreSQL. On selecting and configuring
-  the database, see the file docs/INSTALL-databases.txt.
+  reported during subsequent runs. You need to have CREATE TABLE,
+  SELECT and INSERT permissions on the database.
 
 - You need a deployment of your test system that is safe to test
   against. You might not want to use your production system due to
@@ -116,10 +115,39 @@ Environment requirements
   solutions.
 
 - You may not want to run the fuzz tests from a host that is running
-  antivirus software. Fuzz test cases created by the fuzzer have a
-  tendency of being mistaken as malware. These are false
-  positives. There is no real malware in the tool, unless you provide
-  it with such inputs.
+  antivirus software. Fuzz test cases created by the fuzzer are
+  written to files and have a tendency of being mistaken as
+  malware. These are false positives. There is no real malware in the
+  tool, unless you provide it with such inputs.
+
+What are baseline databases?
+============================
+
+The tests in Mittn have a tendency of finding false positives. Also,
+due to the distributed nature of cloud-based Continuous Integration
+systems, the tests might be running on transient nodes that are
+deployed just for the duration of a test run and then shut down. The
+baseline database holds the information on new findings and known
+false positives in a central place.
+
+Currently, the httpfuzzer and headlessscanner tools use baseline
+databases. The headlessscanner tool requires a database; the httpfuzzer
+can be run without one, but the usefulness is greatly reduced.
+
+The tool uses SQL Alchemy Core as a database abstraction layer. The
+supported database options are listed at
+http://docs.sqlalchemy.org/en/rel_0_9/dialects/index.html.
+
+If you need a centralised database that receives issues from a number
+of nodes, you need a database with network connectivity.  If you only
+need a local database, you can use a file-based (such as sqlite)
+database. The latter is much easier to set up as it requires no
+database server or users to be defined.
+
+Whichever database you use, you will provide the configuration options
+in features/environment.py as a database URI. For details on the URI
+syntax, see
+http://docs.sqlalchemy.org/en/rel_0_9/core/engines.html#database-urls.
 
 Managing findings
 =================
@@ -134,6 +162,35 @@ studied, the developers should:
 2) If the issue was a false positive, mark it as not new by zeroing
    the new_issue flag. if the issue re-occurs, it will not be reported
    again but treated as a false positive.
+
+Selecting the appropriate database
+==================================
+
+The test system uses an SQL database to store false positives, so that
+it doesn't report them as errors. Whenever new positives are
+encountered, those are added to the database. The developers can then
+check the finding. If the finding is a false positive, they will need
+to mark it as such in the database (by setting a flag new_issue as
+false (or zero) on that finding). If it was a real positive, that
+finding needs to be removed from the database, and of course, the
+system under test needs a fix.
+
+The system supports either databases in local files with sqlite, or a
+connection over the network to an off-host database. Select
+the database solution you want to use:
+
+  1. If you run the tests on a developer machine, or on a host that is
+     not redeployed from scratch every time (i.e., the host has
+     persistent storage), or if the host has a persistent
+     network-mounted file system, it is probably easier to store the
+     results into a file-based local database.
+
+  2. If you run tests concurrently on several nodes against the same
+     system under test, or if your test system is on a VM instance
+     that is destroyed after the tests (i.e., the host has no
+     persistent storage), or if you want to share the results easily
+     with a larger team, it is probably easier to use a
+     network-connected database.
 
 Setup instructions
 ==================
@@ -184,10 +241,24 @@ the test description.
 Environment settings
 --------------------
 
-Edit the mittn/features/environment.py to reflect your setup. You need
-to edit at least the common and httpfuzzer specific settings. There is
-a template available that you can copy and edit. For database specific
-settings, please see docs/INSTALL-databases.txt.
+- Edit the mittn/features/environment.py to reflect your setup. You
+  need to edit at least the common and httpfuzzer specific
+  settings. There is a template available that you can copy and edit.
+
+- Edit mittn/features/environment.py so that context.dburl points to
+  your database. The pointer is an SQL Alchemy URI, and the syntax
+  varies for each database. Examples are provided in the file for
+  sqlite and PostgreSQL. Further documentation on the database URIs is
+  available on
+  http://docs.sqlalchemy.org/en/rel_0_9/core/engines.html#database-urls.
+
+- Ensure that you have CREATE TABLE, INSERT and SELECT rights to the
+  database. (SQL Alchemy might require something else under the hood
+  too, depending on what database you are using.)
+
+- During the first run of the tool, the false positives database table
+  will be automatically created. If one exists already, it will not be
+  deleted.
 
 Writing test cases
 ==================
@@ -209,15 +280,9 @@ information on some selected topics.
 Environmental settings
 ----------------------
 
-  Given a PostgreSQL baseline database
-  Given an sqlite baseline database
+  Given a baseline database for injection findings
 
-Selects the database you want to use.  You should select only one or
-the other. You can also run the system without the database, in which
-case Mittn just stops after an error and displays it in the test
-report. Using a database is strongly recommended for any serious
-use. You need to configure your selected database in
-features/environment.py; see docs/INSTALL-databases.txt.
+Checks whether you have a database available.
 
   Given a web proxy
 
@@ -276,6 +341,10 @@ against.
 
 If you do not use valid case instrumentation, the valid case is tried
 just once as the first test case.
+
+Valid cases have an HTTP header that indicates they are valid
+cases. This may be helpful if you are looking at the injected requests
+using a proxy tool.
 
 Defining test targets for static injection
 ------------------------------------------
@@ -344,6 +413,11 @@ When fuzzing, you can start small but you should probably aim to run
 hundreds or thousands of test cases when you actually take the system
 into production.
 
+By default, requests that are sent to the remote host contain an
+X-Abuse: header that lists your hostname and IP address. These are
+intended to give a remote system administrator some way of contacting
+you if you mistakenly point your tool towards a wrong endpoint.
+
   When storing any new cases of return codes "500,502-599"
   When storing any new cases of responses timing out
   When storing any new invalid server responses
@@ -374,6 +448,14 @@ The findings in the database contain the following columns:
   assumed to be a known false positive.
 
   issue_no: A unique serial number.
+
+  timestamp: The timestamp (in UTC) when the request was sent to the
+  server. You can use this information to correlate findings in server
+  logs.
+
+  test_runner_host: the IP address from where the tests were run. You
+  can use this to correlate the finding against server logs. If you
+  only see local addresses here, have a look at your /etc/hosts file.
 
   scenario_id: The arbitrary scenario identifier you provided in the
   feature file.
@@ -437,4 +519,4 @@ for static injection and fuzzing, respectively.
 If URL path fuzzing will be supported in the future, this syntax
 _will_ change into accepting the actual complete URL, and an
 additional feature file rule will be introduced that specifies the
-valid body for otyher HTTP methods than GET.
+valid body for other HTTP methods than GET.

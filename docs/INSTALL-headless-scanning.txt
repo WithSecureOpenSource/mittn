@@ -74,7 +74,8 @@ Software requirements
    version, which can be obtained from http://portswigger.net/. Please
    note that according to Burp Suite licence at the time of writing,
    you are not permitted to offer a "Burp Suite as a Service" type
-   system.
+   system. The tool has been tested with Burp Suite Professional
+   1.6.07.
 
 3. The Headless Scanner Driver extension for Burp Suite, available
    from https://github.com/F-Secure/headless-scanner-driver.
@@ -92,26 +93,13 @@ Software requirements
    a web application with a browser UI, you probably need to create a
    positive test case in Selenium to drive through the user scenario.
 
-6. EITHER sqlite3 and an sqlite database viewer (e.g., sqlitebrowser)
-   for checking results and marking false positives as acceptable;
+6. A database that is supported by SQLAlchemy Core 0.9. See
+   http://docs.sqlalchemy.org/en/rel_0_9/dialects/index.html.
 
-   OR a PostgreSQL database that is network-reachable, a database on
-   that server, and user credentials with SELECT and INSERT rights,
-   and a tool to view the database contents. GUI ones such as pgadmin3
-   or Libreoffice Base work.
-
-   Setting up the database is described in
-   mittn/docs/INSTALL-databases.txt.
-
-   NOTE: If you installed the database before the httpfuzzer
-   functionality was released to Open Source, and want to reuse your
-   data from past test runs, you need to:
-      1) Manually rename headless_burp_issues table:
-         ALTER TABLE headless_burp_issues RENAME TO headlessscanner_issues;
-      2) Remove the httpfuzzer_issues table and re-create it:
-         DROP TABLE httpfuzzer_issues;
-         And then refer to the database installation document.
-    If this is the first time you are using Mittn, this does not affect you.
+   Note: Older versions of Mittn used PostgreSQL and sqlite. The
+   database schema has changed, and the old databases are no longer
+   compatible with the current release. The oldest release of Mittn
+   that is schema-compatible has been tagged as "0.1" on GitHub.
 
 Environment requirements
 ========================
@@ -126,10 +114,8 @@ Environment requirements
 
 - New findings are added into an SQL database, which holds the
   information about known false positives, so that they are not
-  reported during subsequent runs. The system supports local
-  file-based sqlite databases that require no credentials, and
-  database servers running PostgreSQL. On selecting and configuring
-  the database, see mittn/docs/INSTALL-databases.txt.
+  reported during subsequent runs. You need to have CREATE TABLE,
+  SELECT and INSERT permissions on the database.
 
 - Your test target (the server) should preferably be under a specific
   domain that never changes, so you can create a safety-net proxy
@@ -227,11 +213,81 @@ Installing the Headless Scanner Driver
 - Edit mittn/features/environment.py to reflect the location where you
   installed the proxy.
 
-The False Positives Database
+What are baseline databases?
 ============================
 
-You must set up a database for false positives. Please refer to
-mittn/docs/INSTALL-databases.txt.
+The tests in Mittn have a tendency of finding false positives. Also,
+due to the distributed nature of cloud-based Continuous Integration
+systems, the tests might be running on transient nodes that are
+deployed just for the duration of a test run and then shut down. The
+baseline database holds the information on new findings and known
+false positives in a central place.
+
+Currently, the httpfuzzer and headlessscanner tools use baseline
+databases. The headlessscanner tool requires a database; the httpfuzzer
+can be run without one, but the usefulness is greatly reduced.
+
+The tool uses SQL Alchemy Core as a database abstraction layer. The
+supported database options are listed at
+http://docs.sqlalchemy.org/en/rel_0_9/dialects/index.html.
+
+If you need a centralised database that receives issues from a number
+of nodes, you need a database with network connectivity.  If you only
+need a local database, you can use a file-based (such as sqlite)
+database. The latter is much easier to set up as it requires no
+database server or users to be defined.
+
+Whichever database you use, you will provide the configuration options
+in features/environment.py as a database URI. For details on the URI
+syntax, see
+http://docs.sqlalchemy.org/en/rel_0_9/core/engines.html#database-urls.
+
+Selecting the appropriate database
+==================================
+
+The test system uses an SQL database to store false positives, so that
+it doesn't report them as errors. Whenever new positives are
+encountered, those are added to the database. The developers can then
+check the finding. If the finding is a false positive, they will need
+to mark it as such in the database (by setting a flag new_issue as
+false (or zero) on that finding). If it was a real positive, that
+finding needs to be removed from the database, and of course, the
+system under test needs a fix.
+
+The system supports either databases in local files with sqlite, or a
+connection over the network to an off-host database. Select
+the database solution you want to use:
+
+  1. If you run the tests on a developer machine, or on a host that is
+     not redeployed from scratch every time (i.e., the host has
+     persistent storage), or if the host has a persistent
+     network-mounted file system, it is probably easier to store the
+     results into a file-based local database.
+
+  2. If you run tests concurrently on several nodes against the same
+     system under test, or if your test system is on a VM instance
+     that is destroyed after the tests (i.e., the host has no
+     persistent storage), or if you want to share the results easily
+     with a larger team, it is probably easier to use a
+     network-connected database.
+
+Configuring a false positives database
+======================================
+
+- Edit mittn/features/environment.py so that context.dburl points to
+  your database. The pointer is an SQL Alchemy URI, and the syntax
+  varies for each database. Examples are provided in the file for
+  sqlite and PostgreSQL. Further documentation on the database URIs is
+  available on
+  http://docs.sqlalchemy.org/en/rel_0_9/core/engines.html#database-urls.
+
+- Ensure that you have CREATE TABLE, INSERT and SELECT rights to the
+  database. (SQL Alchemy might require something else under the hood
+  too, depending on what database you are using.)
+
+- During the first run of the tool, the false positives database table
+  will be automatically created. If one exists already, it will not be
+  deleted.
 
 Setting up the test case
 ========================
@@ -307,10 +363,10 @@ If there were any new findings (i.e., active scanner issues that were
 not previously seen for this specific test scenario), the test will
 flag a failure.
 
-The findings are added into the false positives database, which is the
-PostgreSQL or sqlite database you set up earlier. All new issues have
-"1" in the new_issue column. Any new issues are re-reported after each
-run, until they are marked as false positives or fixed.
+The findings are added into the false positives database.  All new
+issues have "1" in the new_issue column. Any new issues are
+re-reported after each run, until they are marked as false positives
+or fixed.
 
 If the issue was a false positive, you need to mark this column as
 "0". The issue will not be reported after this. If the same issue
@@ -322,10 +378,20 @@ delete the line from the database.
 
 The results database has the following fields:
 
-- new_issue: 1 if the issue is pending triage (whether or not it is a
-  false positive)
+- new_issue: true (or 1) if the issue is pending triage (whether or
+  not it is a false positive)
 
 - issue_no: an unique id number
+
+- timestamp: a timestamp, in UTC, of when the issue was added to the
+  database. You can use this to correlate the finding against server
+  logs. Unfortunately, the exact time of the offending HTTP request is
+  not made available by Burp, so it cannot be provided here; however,
+  you should be able to look at logs that pre-date this timestamp.
+
+- test_runner_host: the IP address from where the tests were run. You
+  can use this to correlate the finding against server logs. If you
+  only see local addresses here, have a look at your /etc/hosts file.
 
 - scenario_id: test case identifier corresponding to the test case id
   in the .feature file

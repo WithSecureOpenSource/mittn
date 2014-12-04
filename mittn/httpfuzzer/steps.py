@@ -9,14 +9,24 @@ from behave import *
 from mittn.httpfuzzer.static_anomalies import *
 from mittn.httpfuzzer.fuzzer import *
 from mittn.httpfuzzer.injector import *
-from mittn.httpfuzzer.dbtools import *
 from mittn.httpfuzzer.number_ranges import *
+from mittn.httpfuzzer.url_params import *
+import mittn.httpfuzzer.dbtools as fuzzdb
 import json
 import urlparse2
 import subprocess
 import re
-from mittn.httpfuzzer.url_params import *
 
+
+@given(u'a baseline database for injection findings')
+def step_impl(context):
+    """Test that we can connect to a database. As a side effect, open_database(9 also creates the necessary table(s) that are required."""
+    if hasattr(context, 'dburl') is False:
+        assert False, "Database URI not specified"
+    dbconn = fuzzdb.open_database(context)
+    if dbconn is None:
+        assert False, "Cannot open database %s" % context.dburl
+    dbconn.close()
 
 @given(u'an authentication flow id "{auth_id}"')
 def step_impl(context, auth_id):
@@ -71,8 +81,7 @@ def step_impl(context):
         subprocess.check_output([context.radamsa_location, "--help"],
                                 stderr=subprocess.STDOUT)
     except (subprocess.CalledProcessError, OSError) as error:
-        assert False, "Could not execute Radamsa from %s: %s" % (
-        context.radamsa_location, error)
+        assert False, "Could not execute Radamsa from %s: %s" % (context.radamsa_location, error)
     assert True
 
 
@@ -153,8 +162,8 @@ def step_impl(context, returncode_list):
     new_findings = 0
     for response in context.responses:
         if response['resp_statuscode'] in disallowed_returncodes:
-            if known_false_positive(context, response) is False:
-                add_false_positive(context, response)
+            if fuzzdb.known_false_positive(context, response) is False:
+                fuzzdb.add_false_positive(context, response)
                 new_findings += 1
     if new_findings > 0:
         context.new_findings += new_findings
@@ -169,8 +178,8 @@ def step_impl(context):
     new_findings = 0
     for response in context.responses:
         if response.get('server_timeout') is True:
-            if known_false_positive(context, response) is False:
-                add_false_positive(context, response)
+            if fuzzdb.known_false_positive(context, response) is False:
+                fuzzdb.add_false_positive(context, response)
                 new_findings += 1
     if new_findings > 0:
         context.new_findings += new_findings
@@ -186,8 +195,8 @@ def step_impl(context):
     new_findings = 0
     for response in context.responses:
         if response.get('server_protocol_error') is not None:
-            if known_false_positive(context, response) is False:
-                add_false_positive(context, response)
+            if fuzzdb.known_false_positive(context, response) is False:
+                fuzzdb.add_false_positive(context, response)
                 new_findings += 1
     if new_findings > 0:
         context.new_findings += new_findings
@@ -211,9 +220,9 @@ def step_impl(context):
     for response in context.responses:
         if re.search(error_list_regex, response.get('resp_body'),
                      re.IGNORECASE) is not None:
-            if known_false_positive(context, response, server_error_text_match=True) is False:
-                add_false_positive(context, response,
-                                   server_error_text_match=True)
+            response['server_error_text_detected'] = True
+            if fuzzdb.known_false_positive(context, response) is False:
+                fuzzdb.add_false_positive(context, response)
                 new_findings += 1
     if new_findings > 0:
         context.new_findings += new_findings
@@ -337,7 +346,7 @@ def step_impl(context):
     """
     if context.new_findings > 0:
         assert False, "%s new findings were found." % context.new_findings
-    old_findings = number_of_new_in_database(context)
+    old_findings = fuzzdb.number_of_new_in_database(context)
     if old_findings > 0:
         assert False, "No new findings found, but %s unprocessed findings from past runs found in database." % old_findings
     assert True

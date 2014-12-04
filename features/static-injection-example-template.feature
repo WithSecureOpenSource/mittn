@@ -6,9 +6,8 @@ Feature: Do static injection testing for an API
   So that I detect lack of robustness in how inputs are processed
 
   Background: Check that we have a working installation
-    # Select sqlite or postgres. Configuration in features/environment.py
-    # Given a PostgreSQL baseline database
-    Given an sqlite baseline database
+    # Try out the database connection
+    Given a baseline database for injection findings
 
     # If you are behind a proxy, set this and configure in environment.py
     # (hint: use an intercepting proxy to see what the tool does when

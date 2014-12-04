@@ -8,6 +8,8 @@ See LICENSE for details
 import requests
 import logging
 import json
+import socket  # For getting local hostname & IP for the abuse header
+import datetime  # For timestamps
 
 
 def send_http(context, submission, timeout=5, proxy=None,
@@ -57,6 +59,7 @@ def send_http(context, submission, timeout=5, proxy=None,
     response['resp_headers'] = ""  # Default
     response['resp_body'] = ""  # Default
     response['resp_history'] = ""  # Default
+    response['timestamp'] = datetime.datetime.utcnow()
 
     # Next, perform the request
     session = requests.Session()
@@ -78,7 +81,7 @@ def send_http(context, submission, timeout=5, proxy=None,
     return response_list
 
 
-def create_http_request(method, uri, content_type, submission, auth=None):
+def create_http_request(method, uri, content_type, submission, auth=None, valid_case=False):
     # Set up some headers
     """Create and return a Requests HTTP request object. In a separate
     function to allow reuse.
@@ -95,8 +98,11 @@ def create_http_request(method, uri, content_type, submission, auth=None):
                'User-Agent': 'Mozilla/5.0 (compatible; Mittn HTTP '
                              'Fuzzer-Injector)',
                'X-Abuse': 'This is an automatically generated robustness test '
-                          'request',
+                          'request from %s [%s]' % (socket.getfqdn(), socket.gethostbyname(socket.gethostname())),
                'Connection': 'close'}
+
+    if valid_case is True:
+        headers['X-Valid-Case-Instrumentation'] = 'This is a valid request that should succeed'
 
     if method == 'GET':  # Inject into URI parameter
         req = requests.Request(method=method, headers=headers,

@@ -53,13 +53,13 @@ def inject(context, injection_list):
                     context.proxy_address = None
 
                 responses += send_http(context, form_string,
-                                       timeout=context.timeout,
-                                       proxy=context.proxy_address,
-                                       method=method,
-                                       content_type=context.content_type,
-                                       scenario_id=context.scenario_id,
-                                       auth=authenticate(context,
-                                                         context.authentication_id))
+                                     timeout=context.timeout,
+                                     proxy=context.proxy_address,
+                                     method=method,
+                                     content_type=context.content_type,
+                                     scenario_id=context.scenario_id,
+                                     auth=authenticate(context,
+                                                       context.authentication_id))
 
                 # Here, I'd really like to send out unencoded (invalid)
                 # JSON too, but the json library barfs too easily, so
@@ -130,7 +130,8 @@ def test_valid_submission(context, injected_submission=None):
                                       context.targeturi,
                                       context.content_type,
                                       data,
-                                      auth)
+                                      auth,
+                                      valid_case=True)
             session = requests.Session()
             resp = session.send(req,
                                 timeout=context.timeout,
