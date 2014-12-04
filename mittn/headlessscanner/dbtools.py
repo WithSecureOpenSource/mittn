@@ -52,7 +52,7 @@ def open_database(context):
                                            Column('host', types.Text),
                                            Column('port', types.Text),
                                            Column('protocol', types.Text),
-                                           Column('messagejson', types.LargeBinary))
+                                           Column('messages', types.LargeBinary))
 
     # Create the table if it doesn't exist
     # and otherwise no effect
@@ -82,7 +82,7 @@ def known_false_positive(context, issue):
 
     db_select = sql.select([context.headlessscanner_issues]).where(
         and_(
-            context.headlessscanner_issues.c.scenario_id == context.scenario_id,  # Text
+            context.headlessscanner_issues.c.scenario_id == issue['scenario_id'],  # Text
             context.headlessscanner_issues.c.url == issue['url'],  # Text
             context.headlessscanner_issues.c.issuetype == issue['issuetype']))  # Text
 
@@ -118,7 +118,7 @@ def add_false_positive(context, issue):
         # so we add the current time
         timestamp=datetime.datetime.utcnow(),  # DateTime
         test_runner_host=socket.gethostbyname(socket.getfqdn()),  # Text
-        scenario_id=context.scenario_id,  # Text
+        scenario_id=issue['scenario_id'],  # Text
         url=issue['url'],  # Text
         severity=issue['severity'],  # Text
         issuetype=issue['issuetype'],  # Text
@@ -128,7 +128,7 @@ def add_false_positive(context, issue):
         host=issue['host'],  # Text
         port=issue['port'],  # Text
         protocol=issue['protocol'],  # Text
-        messagejson=json.dumps(issue['messages']))  # Blob
+        messages=json.dumps(issue['messages']))  # Blob
 
     dbconn.execute(db_insert)
     dbconn.close()

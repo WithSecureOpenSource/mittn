@@ -83,7 +83,7 @@ class dbtools_test_case(unittest.TestCase):
         for key, value in response.iteritems():
             self.assertEqual(result[key], value,
                              '%s not found in database after add' % key)
-        self.assertEqual(result['test_runner_host'], socket.getfqdn(),
+        self.assertEqual(result['test_runner_host'], socket.gethostbyname(socket.getfqdn()),
                          'Test runner host name not correct in database')
         self.assertLessEqual(result['timestamp'], datetime.datetime.utcnow(),
                              'Timestamp not correctly stored in database')

@@ -5,6 +5,7 @@ import os
 import mittn.headlessscanner.dbtools as dbtools
 import datetime
 import socket
+import json
 import sqlalchemy
 from sqlalchemy import create_engine, Table, Column, MetaData, exc, types
 
@@ -39,17 +40,16 @@ class dbtools_test_case(unittest.TestCase):
         # Add a false positive to database and check that all fields
         # get populated and can be compared back originals
         issue = {'scenario_id': '1',
-                 'test_runner_host': socket.getfqdn(),
-                 'url': 'url',
-                 'severity': 'severity',
-                 'issuetype': 'issuetype',
-                 'issuename': 'issuename',
-                 'issuedetail': 'issuedetail',
-                 'confidence': 'confidence',
-                 'host': 'host',
-                 'port': 'port',
-                 'protocol': 'protocol',
-                 'messagejson': 'messagejson'}
+                 'url': 'testurl',
+                 'severity': 'testseverity',
+                 'issuetype': 'testissuetype',
+                 'issuename': 'testissuename',
+                 'issuedetail': 'testissuedetail',
+                 'confidence': 'testconfidence',
+                 'host': 'testhost',
+                 'port': 'testport',
+                 'protocol': 'testprotocol',
+                 'messages': '{foo=bar}'}
 
         dbtools.add_false_positive(self.context, issue)
 
@@ -73,14 +73,17 @@ class dbtools_test_case(unittest.TestCase):
                                        Column('host', types.Text),
                                        Column('port', types.Text),
                                        Column('protocol', types.Text),
-                                       Column('messagejson', types.LargeBinary))
+                                       Column('messages', types.LargeBinary))
         db_select = sqlalchemy.sql.select([headlessscanner_issues])
         db_result = dbconn.execute(db_select)
         result = db_result.fetchone()
         for key, value in issue.iteritems():
-            self.assertEqual(result[key], value,
-                             '%s not found in database after add' % key)
-        self.assertEqual(result['test_runner_host'], socket.getfqdn(),
+            if key == 'messages':
+                self.assertEqual(result[key], json.dumps(value))
+            else:
+                self.assertEqual(result[key], value,
+                                 '%s not found in database after add' % key)
+        self.assertEqual(result['test_runner_host'], socket.gethostbyname(socket.getfqdn()),
                          'Test runner host name not correct in database')
         self.assertLessEqual(result['timestamp'], datetime.datetime.utcnow(),
                              'Timestamp not correctly stored in database')
@@ -101,7 +104,7 @@ class dbtools_test_case(unittest.TestCase):
                  'host': 'host',
                  'port': 'port',
                  'protocol': 'protocol',
-                 'messagejson': 'messagejson'}
+                 'messages': 'messagejson'}
 
         # Add one, expect count to be 1
         dbtools.add_false_positive(self.context, issue)
@@ -127,7 +130,7 @@ class dbtools_test_case(unittest.TestCase):
                  'host': 'host',
                  'port': 'port',
                  'protocol': 'protocol',
-                 'messagejson': 'messagejson'}
+                 'messages': 'messagejson'}
 
         # First add one false positive and try checking against it
         dbtools.add_false_positive(self.context, issue)

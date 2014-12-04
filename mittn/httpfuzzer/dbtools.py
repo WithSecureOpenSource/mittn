@@ -99,7 +99,7 @@ def known_false_positive(context, response):
 
     db_select = sql.select([context.httpfuzzer_issues]).where(
         and_(
-            context.httpfuzzer_issues.c.scenario_id == str(response['scenario_id']),  # Text
+            context.httpfuzzer_issues.c.scenario_id == response['scenario_id'],  # Text
             context.httpfuzzer_issues.c.server_protocol_error == response['server_protocol_error'],  # Text
             context.httpfuzzer_issues.c.resp_statuscode == str(response['resp_statuscode']),  # Text
             context.httpfuzzer_issues.c.server_timeout == response['server_timeout'],  # Boolean

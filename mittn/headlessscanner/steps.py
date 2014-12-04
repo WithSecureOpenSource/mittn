@@ -177,6 +177,7 @@ def step_impl(context):
 
     new_items = 0
     for issue in scanissues:
+        issue['scenario_id'] = context.scenario_id
         if scandb.known_false_positive(context, issue) is False:
             new_items += 1
             scandb.add_false_positive(context, issue)
