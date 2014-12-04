@@ -64,5 +64,5 @@ def before_all(context):
     # tlschecker specific
     ####
 
-    # sslyze absolute path (version >= 0.8)
+    # sslyze absolute path
     context.sslyze_location = "/path/to/sslyze"

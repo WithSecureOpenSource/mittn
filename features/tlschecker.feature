@@ -69,6 +69,7 @@ Feature: Test TLS server-side configuration
 
   Scenario: The preferred cipher suite should be adequate
     # Suites are regular expressions
+    # This checks against the baseline TLSv1 result
     Given a stored connection result
     Then one of the following cipher suites is preferred
          | cipher suite      |
@@ -90,8 +91,20 @@ Feature: Test TLS server-side configuration
     Given a stored connection result
     Then Strict TLS headers are seen
 
+  Scenario: The server is not vulnerable for Heartbleed
+    Given a stored connection result
+    Then server has no Heartbleed vulnerability
+
+  Scenario: The certificate does not use SHA-1 any more
+    Given a stored connection result
+    Then certificate does not use SHA-1
+
   Scenario: SSLv2 should be disabled
     When a "SSLv2" connection is made
+    Then a TLS connection cannot be established
+
+  Scenario: SSLv3 should be disabled
+    When a "SSLv3" connection is made
     Then a TLS connection cannot be established
 
   Scenario: TLS 1.2 should be enabled
