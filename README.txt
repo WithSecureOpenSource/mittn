@@ -37,6 +37,10 @@ Installation
 Exact installation varies by the test tool you want to use. See the
 docs/ directory for detailed instructions.
 
+  NOTE: Backwards compatibility of false positive databases has been
+  broken. The last version to be compatible with the original database
+  schema is tagged "v0.1" on GitHub.
+
 Features
 --------
 
@@ -44,11 +48,10 @@ Currently, the tool implements:
 
 - Automated web scanning by driving Burp Suite Professional's Active
   Scanner, available from http://portswigger.net/. Burp and Burp Suite
-  are trademarks of Portswigger, Ltd. Tested with version 1.6.x.
+  are trademarks of Portswigger, Ltd. Tested with version 1.6.07.
 
 - TLS configuration scanning using sslyze, available from
-  https://github.com/iSECPartners/sslyze. Tested with version 0.8. (Older
-  versions do not work.)
+  https://github.com/iSECPartners/sslyze. Requires version 0.10.
 
 - HTTP API fuzzing (JSON and form submissions) with Radamsa, available
   from https://code.google.com/p/ouspg/wiki/Radamsa. Tested with version 0.4a.
