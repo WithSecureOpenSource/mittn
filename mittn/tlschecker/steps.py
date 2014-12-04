@@ -21,15 +21,22 @@ from datetime import datetime
 
 @step('sslyze is correctly installed')
 def step_impl(context):
-    context.output = check_output([context.sslyze_location])
+    context.output = check_output([context.sslyze_location, '--version'])
 
+    assert "SSLyze v0.10" in context.output, "SSLyze version 0.10 is required"
     # sslyze will emit these to stdout if the plugins are found
     assert "PluginCompression" in context.output, \
         "PluginCompression not installed"
+    assert "PluginHSTS" in context.output, \
+        "PluginHSTS not installed"
+    assert "PluginCertInfo" in context.output, \
+        "PluginCertInfo not installed"
     assert "PluginSessionRenegotiation" in context.output, \
         "PluginSessionRenegotiation not installed"
     assert "PluginOpenSSLCipherSuites" in context.output, \
         "PluginOpenSSLCipherSuites not installed"
+    assert "PluginChromeSha1Deprecation" in context.output, \
+        "PluginChromeSha1Deprecation not installed"
 
 
 @step('target host and port in "{host}" and "{port}"')
@@ -108,7 +115,7 @@ def step_impl(context, keysize):
     except AttributeError:
         assert False, "No stored TLS connection result set was found."
     publickeysize = root.find(".//publicKeySize").text.split(" ")
-    assert int(keysize) >= int(publickeysize[0]), \
+    assert int(keysize) <= int(publickeysize[0]), \
         "Public key size less than %s" % keysize
 
 
@@ -120,6 +127,7 @@ def step_impl(context, proto):
     xmloutfile.close()  # Free the lock on the XML output file
     context.output = check_output([context.sslyze_location, "--%s" % proto.lower(),
                                    "--compression", "--reneg",
+                                   "--chrome_sha1", "--heartbleed",
                                    "--xml_out=" + xmloutfile.name,
                                    "--certinfo=full",
                                    "--hsts",
@@ -153,8 +161,12 @@ def step_impl(context):
         root = context.xmloutput.getroot()
     except AttributeError:
         assert False, "No stored TLS connection result set was found."
-    compr = root.find('.//compression')
-    assert len(compr) == 0, "Compression is enabled"
+    compr = root.findall('.//compressionMethod')
+    compression = False
+    for comp_method in compr:
+        if comp_method.get('isSupported') != 'False':
+            compression = True
+    assert compression is False, "Compression is enabled"
 
 
 @step(u'secure renegotiation is supported')
@@ -167,9 +179,9 @@ def step_impl(context):
     assert reneg is not None, \
         "Renegotiation is not supported"
     assert reneg.get('canBeClientInitiated') == 'False', \
-        "Client side renegotiation is enabled"
+        "Client side renegotiation is enabled (shouldn't be)"
     assert reneg.get('isSecure') == 'True', \
-        "Secure renegotiation is not supported"
+        "Secure renegotiation is not supported (should be)"
 
 
 @step(u'the connection results are stored')
@@ -243,11 +255,10 @@ def step_impl(context):
     acceptable_suites_regex = "(" + ")|(".join(acceptable_suites) + ")"
     # The regex must match the preferred suite for every protocol
     found = True
-    for accepted_suites in root.findall('.//preferredCipherSuite/cipherSuite'):
-        for suite in accepted_suites:
-            if re.search(acceptable_suites_regex, suite.get("name")) is None:
-                print suite.get("name")
-                found = False
+    accepted_suites = root.findall('.//preferredCipherSuite/cipherSuite')
+    for accepted_suite in accepted_suites:
+        if re.search(acceptable_suites_regex, accepted_suite.get("name")) is None:
+            found = False
     assert found, "None of the listed cipher suites were preferred"
 
 
@@ -284,6 +295,34 @@ def step_impl(context):
         root = context.xmloutput.getroot()
     except AttributeError:
         assert False, "No stored TLS connection result set was found."
-    hsts = root.find('.//PluginHSTS/hsts')
-    assert hsts.get('hsts_header_found') == 'True', \
+    hsts = root.findall('.//hsts')  # Multiple hsts tags in 0.10
+    hsts_found = False
+    for hststag in hsts:
+        if hststag.get('sentHstsHeader') == 'True':
+            hsts_found = True
+    assert hsts_found, \
         "HTTP Strict Transport Security header not observed"
+
+@step(u'server has no Heartbleed vulnerability')
+def step_impl(context):
+    try:
+        root = context.xmloutput.getroot()
+    except AttributeError:
+        assert False, "No stored TLS connection result set was found."
+    heartbleed = root.findall('.//heartbleed')  # Multiple hsts tags in 0.10
+    heartbleed_found = False
+    for hb_tag in heartbleed:
+        if hb_tag.get('isVulnerable') == 'True':
+            heartbleed_found = True
+    assert heartbleed_found is False, \
+        "Server is vulnerable for Heartbleed"
+
+@step(u'certificate does not use SHA-1')
+def step_impl(context):
+    try:
+        root = context.xmloutput.getroot()
+    except AttributeError:
+        assert False, "No stored TLS connection result set was found."
+    sha1 = root.find('.//chromeSha1Deprecation')
+    assert sha1.get('isServerAffected') == "False", \
+        "Server is affected by SHA-1 deprecation (sunset)"
