@@ -141,7 +141,7 @@ def add_false_positive(context, response):
             response['req_body'][:200] + "... (truncated)") if len(
             response['req_body']) > 210 else response['req_body']
         truncated_uri = (response['url'][:200] + "... (truncated)") if len(
-            response['url']) > 210 else response['uri']
+            response['url']) > 210 else response['url']
         assert False, "Response from server failed a check, and no errors " \
                       "database is in use. Scenario id = %s, error = %s, " \
                       "timeout = %s, status = %s, URI = %s, req_method = %s, " \
