@@ -9,11 +9,11 @@ Feature: Test TLS server-side configuration
     # or alternatively, specify the target here
     # Given target host "target.domain" and port "443"
 
-  Scenario: A TLSv1 connection can be established (baseline interop TLS version)
+  Scenario: A TLSv1.2 connection can be established (baseline interop TLS version)
     # This scenario stores the connection result, which is interrogated by
     # the subsequent steps
     Given sslyze is correctly installed
-    When a "TLSv1" connection is made
+    When a "TLSv1_2" connection is made
     Then a TLS connection can be established
     And the connection results are stored
 
@@ -69,13 +69,13 @@ Feature: Test TLS server-side configuration
 
   Scenario: The preferred cipher suite should be adequate
     # Suites are regular expressions
-    # This checks against the baseline TLSv1 result
+    # This checks against the baseline TLSv1.2 result
     Given a stored connection result
     Then one of the following cipher suites is preferred
          | cipher suite      |
-         | DHE.*AES256-GCM   |
+         | DHE.*-GCM         |
          | DHE.*AES256       |
-         | ECDHE.*AES256-GCM |
+         | ECDHE.*-GCM       |
          | ECDHE.*AES256     |
 
   Scenario: The server certificate should be trusted
@@ -118,6 +118,6 @@ Feature: Test TLS server-side configuration
     Given a stored connection result
     Then one of the following cipher suites is preferred
          | cipher suite      |
-         | DHE.*AES256-GCM   |
-         | ECDHE.*AES256-GCM |
+         | DHE.*-GCM         |
+         | ECDHE.*-GCM       |
 
