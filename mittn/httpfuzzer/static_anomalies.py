@@ -112,10 +112,16 @@ anomaly_list = [
     'eyJhbGciOiJub25lIn0K.eyJyZnAiOiJtaXR0biIsCiJ0YXJnZXRfdXJpIjoiaHR0cDovL21pdHRuLm9yZyJ9Cg==.',  # A JWT state parameter
     'redirect_uri',
     'state',
-    "&access_token=POSSIBLE_INJECTION_PROBLEM&",
-    "?access_token=POSSIBLE_INJECTION_PROBLEM&",
+    "&access_token=DUMMY_TOKEN_FROM_MITTN&",
+    "?access_token=DUMMY_TOKEN_FROM_MITTN&",
     "&redirect_uri=http://mittn.org/attack&",   # Point to somewhere that returns an error; the test tool should follow redirects
     "?redirect_uri=http://mittn.org/attack&",  # Point to somewhere that returns an error; the test tool should follow redirects
+
+    # Timestamps
+    "1969-12-31T11:59:59.99Z",  # Just before Unix epoch anywhere on Earth
+    "1969-12-31T23:59:59.99-25:00",  # In a place far away
+    "1969-12-31T23:59:59.99+25:00",  # In a place far away
+    "2273-01-01T12:00:00.00Z",  # Better get Enterprise going
 
     # Important numbers
     -1,
@@ -130,16 +136,15 @@ anomaly_list = [
     -2 ** 16,
     2 ** 32,
     -2 ** 32,
-    2 ** 64,
-    -2 ** 64,
-    2 ** 128,
-    -2 ** 128,
+    -(2 ** 53),  # I-JSON "guaranteed" integer limit minus one
+    2 ** 53,  # I-JSON "guaranteed" integer limit plus one
     2 ** 256,
     str(2 ** 256),
     -2 ** 256,
     str(-2 ** 256),
     1e-16,
     1e-32,
+    3.141592653589793238462643383279,  # More precision than usually handled
     '\n1',
     '1\n',
     2.2250738585072011e-308,  # CVE-2010-4645
@@ -208,7 +213,6 @@ anomaly_list = [
     "A" * 256,
     "A" * 1025,
     "A" * 65537,
-    ":-) =) XD o_O" * 10000  # Rendering a lot of animated emoticons can cause pain
-    # Enable following to allow 1 megabyte inputs
-    #    "A" * 1024 * 1024
+    ":-) =) XD o_O" * 10000,  # Rendering a lot of animated emoticons can cause pain
+    "A" * (1024 * 1024)  # 1 MB
 ]
