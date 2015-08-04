@@ -54,7 +54,7 @@ Currently, the tool implements:
   https://github.com/iSECPartners/sslyze. Requires version 0.10.
 
 - HTTP API fuzzing (JSON and form submissions) with Radamsa, available
-  from https://code.google.com/p/ouspg/wiki/Radamsa. Tested with version 0.4a.
+  from https://github.com/aoh/radamsa. Tested with version 0.4a.
   (Older versions do not work.)
 
 If you'd like something else to be supported, please open an issue
