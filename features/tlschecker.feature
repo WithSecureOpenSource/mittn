@@ -78,6 +78,11 @@ Feature: Test TLS server-side configuration
          | ECDHE.*-GCM       |
          | ECDHE.*AES256     |
 
+  Scenario: The server uses a strong D-H group
+    # Mitigation for Logjam vulnerability
+    Given a stored connection result
+    Then the D-H group size is at least "2048" bits
+
   Scenario: The server certificate should be trusted
     Given a stored connection result
     Then the certificate has a matching host name

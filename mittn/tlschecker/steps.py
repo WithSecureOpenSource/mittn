@@ -108,6 +108,23 @@ def step_impl(context):
         "Certificate subject does not match host name"
 
 
+@step(u'the D-H group size is at least "{groupsize}" bits')
+def step_impl(context, groupsize):
+    try:
+        root = context.xmloutput.getroot()
+    except AttributeError:
+        assert False, "No stored TLS connection result set was found."
+    keyexchange = root.find(".//keyExchange")
+    if keyexchange is None:
+       # Kudos bro!
+        return
+    keytype = keyexchange.get('Type')
+    realgroupsize = keyexchange.get('GroupSize')
+    if keytype == 'DH':
+        assert int(groupsize) <= int(realgroupsize), \
+            "D-H group size less than %s" % groupsize
+
+
 @step(u'the public key size is at least "{keysize}" bits')
 def step_impl(context, keysize):
     try:
