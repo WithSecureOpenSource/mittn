@@ -23,10 +23,10 @@ Software requirements
 1. Python package dependencies; see setup.py.
 
 2. sslyze, which you can obtain from
-   https://github.com/iSECPartners/sslyze.  The version against which
-   the tool works is 0.8. If the XML output changes, tests may break
+   https://github.com/nabla-c0d3/sslyze. The version against which
+   the tool works is 0.10. If the XML output changes, tests may break
    unexpectedly. You may want to obtain a pre-built version from
-   https://github.com/iSECPartners/sslyze/releases. Ensure the script
+   https://github.com/nabla-c0d3/sslyze/releases. Ensure the script
    is executable.
 
 Environment requirements
