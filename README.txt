@@ -51,7 +51,7 @@ Currently, the tool implements:
   are trademarks of Portswigger, Ltd. Tested with version 1.6.07.
 
 - TLS configuration scanning using sslyze, available from
-  https://github.com/nabla-c0d3/sslyze/releases. Requires version 0.10.
+  https://github.com/nabla-c0d3/sslyze/releases. Requires version 0.12.
 
 - HTTP API fuzzing (JSON and form submissions) with Radamsa, available
   from https://github.com/aoh/radamsa. Tested with version 0.4a.
