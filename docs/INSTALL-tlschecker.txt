@@ -24,7 +24,7 @@ Software requirements
 
 2. sslyze, which you can obtain from
    https://github.com/nabla-c0d3/sslyze. The version against which
-   the tool works is 0.10. If the XML output changes, tests may break
+   the tool works is 0.12. If the XML output changes, tests may break
    unexpectedly. You may want to obtain a pre-built version from
    https://github.com/nabla-c0d3/sslyze/releases. Ensure the script
    is executable.

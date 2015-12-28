@@ -22,21 +22,7 @@ from datetime import datetime
 @step('sslyze is correctly installed')
 def step_impl(context):
     context.output = check_output([context.sslyze_location, '--version'])
-
-    assert "SSLyze v0.10" in context.output, "SSLyze version 0.10 is required"
-    # sslyze will emit these to stdout if the plugins are found
-    assert "PluginCompression" in context.output, \
-        "PluginCompression not installed"
-    assert "PluginHSTS" in context.output, \
-        "PluginHSTS not installed"
-    assert "PluginCertInfo" in context.output, \
-        "PluginCertInfo not installed"
-    assert "PluginSessionRenegotiation" in context.output, \
-        "PluginSessionRenegotiation not installed"
-    assert "PluginOpenSSLCipherSuites" in context.output, \
-        "PluginOpenSSLCipherSuites not installed"
-    assert "PluginChromeSha1Deprecation" in context.output, \
-        "PluginChromeSha1Deprecation not installed"
+    assert "0.12.0" in context.output, "SSLyze version 0.12 is required"
 
 
 @step('target host and port in "{host}" and "{port}"')
@@ -131,7 +117,7 @@ def step_impl(context, keysize):
         root = context.xmloutput.getroot()
     except AttributeError:
         assert False, "No stored TLS connection result set was found."
-    publickeysize = root.find(".//publicKeySize").text.split(" ")
+    publickeysize = root.find(".//publicKeySize").text
     assert int(keysize) <= int(publickeysize[0]), \
         "Public key size less than %s" % keysize
 
@@ -312,12 +298,8 @@ def step_impl(context):
         root = context.xmloutput.getroot()
     except AttributeError:
         assert False, "No stored TLS connection result set was found."
-    hsts = root.findall('.//hsts')  # Multiple hsts tags in 0.10
-    hsts_found = False
-    for hststag in hsts:
-        if hststag.get('sentHstsHeader') == 'True':
-            hsts_found = True
-    assert hsts_found, \
+    hsts = root.find('.//httpStrictTransportSecurity')
+    assert hsts.get('isSupported') == 'True', \
         "HTTP Strict Transport Security header not observed"
 
 @step(u'server has no Heartbleed vulnerability')
@@ -326,12 +308,8 @@ def step_impl(context):
         root = context.xmloutput.getroot()
     except AttributeError:
         assert False, "No stored TLS connection result set was found."
-    heartbleed = root.findall('.//heartbleed')  # Multiple hsts tags in 0.10
-    heartbleed_found = False
-    for hb_tag in heartbleed:
-        if hb_tag.get('isVulnerable') == 'True':
-            heartbleed_found = True
-    assert heartbleed_found is False, \
+    heartbleed = root.find('.//openSslHeartbleed')
+    assert heartbleed.get('isVulnerable') == 'False', \
         "Server is vulnerable for Heartbleed"
 
 @step(u'certificate does not use SHA-1')
