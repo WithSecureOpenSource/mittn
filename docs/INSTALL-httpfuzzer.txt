@@ -89,7 +89,7 @@ Software requirements
    As a suggestion, you might want to use a virtualenv.
 
 2. Radamsa, a fuzzer compiled on your system. Radamsa is available
-   from https://code.google.com/p/ouspg/wiki/Radamsa. Mittn has been
+   from https://github.com/aoh/radamsa. Mittn has been
    tested with version 0.4a. Radamsa is an excellent file-based fuzzer
    created by the University of Oulu Secure Programming Group.
 
