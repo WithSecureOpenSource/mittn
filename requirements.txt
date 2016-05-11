@@ -1,6 +1,6 @@
-behave>=1.2.4
-SQLAlchemy==0.9.8
-requests>=2.2.1
-pytz>=2014.2
-python-dateutil>=2.2
-urlparse2>=1.1.1
+behave >= 1.2.4
+SQLAlchemy >= 0.9.8
+requests >= 2.2.1
+pytz >= 2014.2
+python-dateutil >= 2.2
+urlparse2 >= 1.1.1

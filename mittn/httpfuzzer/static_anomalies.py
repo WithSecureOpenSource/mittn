@@ -20,7 +20,7 @@ least a timeout.
 
 """
 
-anomaly_list = [
+STATIC_ANOMALIES = [
     # Valid cases
     "A harmless string",  # Something easy to start with
     str('\xc3\xa5\xc3\xa4\xc3\xb6'),  # Scandinavian characters as Unicode UTF-8
