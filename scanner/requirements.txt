@@ -1,0 +1,4 @@
+behave >= 1.2.5
+SQLAlchemy >= 1.0.12
+requests >= 2.10.0
+six >= 1.10.0
