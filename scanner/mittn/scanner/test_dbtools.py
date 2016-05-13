@@ -2,7 +2,7 @@ import unittest
 import tempfile
 import uuid
 import os
-import mittn.headlessscanner.dbtools as dbtools
+import mittn.scanner.dbtools as dbtools
 import datetime
 import socket
 import json

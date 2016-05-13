@@ -1,6 +1,9 @@
-===============================
- Headless Scanning Installation
-===============================
+=============
+mittn-scanner
+=============
+
+Headless Scanning Installation
+==============================
 
 If you stumble upon a bug, please file a ticket on the GitHub
 project or send a pull request with the patch.

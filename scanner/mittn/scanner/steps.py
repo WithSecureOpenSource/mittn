@@ -17,8 +17,8 @@ import time
 import re
 import logging
 import os
-from mittn.headlessscanner.proxy_comms import *
-import mittn.headlessscanner.dbtools as scandb
+from mittn.scanner.proxy_comms import *
+import mittn.scanner.dbtools as scandb
 # Import positive test scenario implementations
 from features.scenarios import *
 

@@ -17,7 +17,7 @@ from sqlalchemy import create_engine, Column, types
 from sqlalchemy.ext.declarative.api import declarative_base
 from sqlalchemy.orm.session import sessionmaker
 
-from mittn.httpfuzzer.static_anomalies import STATIC_ANOMALIES
+from mittn.fuzzer.static_anomalies import STATIC_ANOMALIES
 
 FQDN = socket.getfqdn()
 HOSTNAME = socket.gethostbyname(socket.gethostname())

@@ -1,16 +1,13 @@
-import unittest
-import tempfile
-import uuid
-import os
 import datetime
-import socket
-import sqlalchemy
-from sqlalchemy import create_engine, Table, Column, MetaData, exc, types
+import os
+import tempfile
+import unittest
+import uuid
+
 from sqlalchemy.orm.session import Session
 
-from mittn.httpfuzzer.fuzzing import Archiver
-
-from mittn.httpfuzzer.fuzzing import Issue
+from mittn.fuzzer.fuzzing import Archiver
+from mittn.fuzzer.fuzzing import Issue
 
 
 class dbtools_test_case(unittest.TestCase):

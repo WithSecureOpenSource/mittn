@@ -5,7 +5,7 @@ from flask_admin.base import Admin
 from flask_admin.contrib.sqla.view import ModelView
 from flask_sqlalchemy import SQLAlchemy
 
-from mittn.httpfuzzer.fuzzing import Issue
+from mittn.fuzzer.fuzzing import Issue
 
 
 def build_app():

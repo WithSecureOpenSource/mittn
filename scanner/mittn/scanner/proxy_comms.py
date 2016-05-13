@@ -1,6 +1,5 @@
-"""Helper functions to communicate with Burp Suite extension"""
+"""Helper functions to communicate with Burp Suite extension
 
-"""
 Copyright (c) 2013-2014 F-Secure
 See LICENSE for details
 

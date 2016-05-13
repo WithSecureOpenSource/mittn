@@ -1,1 +1,1 @@
-wires-python ~= 2.0.0
+setuptools-scm >= 1.11.0
