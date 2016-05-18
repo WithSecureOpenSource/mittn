@@ -5,7 +5,7 @@ setup(
     name='mittn',
     use_scm_version=True,
     description='Mittn',
-    long_description=open('README.txt').read(),
+    long_description=open('README.rst').read(),
     classifiers=[
           "Programming Language :: Python :: 2.7"
     ],
