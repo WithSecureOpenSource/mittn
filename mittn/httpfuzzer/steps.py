@@ -1,10 +1,4 @@
-"""httpfuzzer step library for Behave"""
-
-"""
-Copyright (c) 2014 F-Secure
-See LICENSE for details
-"""
-
+"""httpfuzzer step library for Behave."""
 from behave import *
 from mittn.httpfuzzer.static_anomalies import *
 from mittn.httpfuzzer.fuzzer import *
@@ -16,6 +10,8 @@ import json
 import urlparse2
 import subprocess
 import re
+
+__copyright__ = "Copyright (c) 2013- F-Secure"
 
 
 @given(u'a baseline database for injection findings')

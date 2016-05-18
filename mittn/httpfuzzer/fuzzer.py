@@ -7,10 +7,7 @@ import os
 import subprocess
 import shutil
 
-"""
-Copyright (c) 2012-2014 F-Secure
-See LICENSE for details
-"""
+__copyright__ = "Copyright (c) 2013- F-Secure"
 
 
 def collect_values(branch, valid_values, anomaly_key=None):

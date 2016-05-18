@@ -1,12 +1,5 @@
 # pylint: disable=E0602,E0102
-
-"""
-Copyright (c) 2013-2014 F-Secure
-See LICENSE for details
-
-Burp and Burp Suite are trademarks of Portswigger, Ltd.
-"""
-
+"""Burp and Burp Suite are trademarks of Portswigger, Ltd."""
 from behave import *
 import shlex
 import subprocess
@@ -21,6 +14,8 @@ from mittn.headlessscanner.proxy_comms import *
 import mittn.headlessscanner.dbtools as scandb
 # Import positive test scenario implementations
 from features.scenarios import *
+
+__copyright__ = "Copyright (c) 2013- F-Secure"
 
 
 @given(u'a baseline database for scanner findings')

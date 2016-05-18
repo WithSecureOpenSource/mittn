@@ -1,17 +1,15 @@
-"""Helper functions to communicate with Burp Suite extension"""
-
-"""
-Copyright (c) 2013-2014 F-Secure
-See LICENSE for details
+"""Helper functions to communicate with Burp Suite extension.
 
 Burp and Burp Suite are trademarks of Portswigger, Ltd.
-"""
 
+"""
 import select
 import json
 import shlex
 import subprocess
 import time
+
+__copyright__ = "Copyright (c) 2013- F-Secure"
 
 
 def read_next_json(process):

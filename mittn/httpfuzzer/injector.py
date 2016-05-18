@@ -1,10 +1,4 @@
-"""Helper functions for injecting data and testing valid cases"""
-
-"""
-Copyright (c) 2014 F-Secure
-See LICENSE for details
-"""
-
+"""Helper functions for injecting data and testing valid cases."""
 from mittn.httpfuzzer.httptools import *
 from mittn.httpfuzzer.dictwalker import *
 from mittn.httpfuzzer.posttools import *
@@ -12,6 +6,8 @@ from features.authenticate import authenticate
 import requests
 import logging
 from mittn.httpfuzzer.url_params import *
+
+__copyright__ = "Copyright (c) 2013- F-Secure"
 
 
 def inject(context, injection_list):

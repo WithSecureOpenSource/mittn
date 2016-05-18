@@ -1,15 +1,13 @@
-"""Functions to (de)serialise URL path parameters. These aren't
-query parameters but instead a less-used part of the URL path
+"""Functions to (de)serialise URL path parameters.
+
+These aren't query parameters but instead a less-used part of the URL path
 (like keyword1=value1,value2;keyword2=value3).
-"""
 
 """
-Copyright (c) 2014 F-Secure
-See LICENSE for details
-"""
-
 import urllib
 from collections import OrderedDict
+
+__copyright__ = "Copyright (c) 2013- F-Secure"
 
 
 def url_to_dict(params):

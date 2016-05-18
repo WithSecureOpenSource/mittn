@@ -1,16 +1,12 @@
 """Helper functions for managing the false positives database"""
-
-"""
-Copyright (c) 2014 F-Secure
-See LICENSE for details
-"""
-
 import os
 import datetime
 import socket
 import json
 from sqlalchemy import create_engine, Table, Column, MetaData, exc, types
 from sqlalchemy import sql, and_
+
+__copyright__ = "Copyright (c) 2013- F-Secure"
 
 
 def open_database(context):

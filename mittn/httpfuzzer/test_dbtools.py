@@ -8,6 +8,8 @@ import mittn.httpfuzzer.dbtools as dbtools
 import sqlalchemy
 from sqlalchemy import create_engine, Table, Column, MetaData, exc, types
 
+__copyright__ = "Copyright (c) 2013- F-Secure"
+
 
 class dbtools_test_case(unittest.TestCase):
     def setUp(self):
