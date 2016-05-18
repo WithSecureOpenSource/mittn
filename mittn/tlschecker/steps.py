@@ -1,10 +1,4 @@
 # pylint: disable=E0602,E0102
-
-"""
-Copyright (c) 2013-2014 F-Secure
-See LICENSE for details
-"""
-
 from behave import *
 from subprocess import check_output
 from tempfile import NamedTemporaryFile
@@ -17,6 +11,8 @@ import dateutil.parser
 import dateutil.relativedelta
 import pytz
 from datetime import datetime
+
+__copyright__ = "Copyright (c) 2013- F-Secure"
 
 
 @step('sslyze is correctly installed')

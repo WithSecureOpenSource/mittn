@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=line-too-long
-"""List of static anomalies that can be injected. Before using,
-replace mittn.org domain references with something you have control over.
+"""List of static anomalies that can be injected.
+
+Before using, replace mittn.org domain references with something you
+have control over.
 
 These injections should be designed to cause a detectable problem at
 the server end. The tool doesn't check for reflected data, so any
@@ -19,6 +21,7 @@ application stack. In these cases, you'd be more likely to cause at
 least a timeout.
 
 """
+__copyright__ = "Copyright (c) 2013- F-Secure"
 
 anomaly_list = [
     # Valid cases

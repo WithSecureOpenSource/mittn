@@ -1,15 +1,11 @@
-"""Send a request to server using a variety of ways and return the results"""
-
-"""
-Copyright (c) 2014 F-Secure
-See LICENSE for details
-"""
-
+"""Send a request to server using a variety of ways and return the results."""
 import requests
 import logging
 import json
 import socket  # For getting local hostname & IP for the abuse header
 import datetime  # For timestamps
+
+__copyright__ = "Copyright (c) 2013- F-Secure"
 
 
 def send_http(context, submission, timeout=5, proxy=None,

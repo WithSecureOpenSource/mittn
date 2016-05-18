@@ -1,12 +1,8 @@
-"""Helper functions for outputting GET/POST content"""
-
-"""
-Copyright (c) 2014 F-Secure
-See LICENSE for details
-"""
-
+"""Helper functions for outputting GET/POST content."""
 import urllib
 import json
+
+__copyright__ = "Copyright (c) 2013- F-Secure"
 
 
 def serialise_to_url(dictionary, encode=True):

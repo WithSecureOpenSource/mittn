@@ -12,14 +12,11 @@ The key "None" is used for general in injection.
 
 This is done because this allows us to fuzz the values for keys with specific
 valid samples for each key separately.
-"""
 
 """
-Copyright (c) 2014 F-Secure
-See LICENSE for details
-"""
-
 import copy
+
+__copyright__ = "Copyright (c) 2013- F-Secure"
 
 
 def anomaly_dict_generator_static(static_anomalies_list):
