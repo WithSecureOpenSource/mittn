@@ -20,13 +20,19 @@ import re
 
 @given(u'a baseline database for injection findings')
 def step_impl(context):
-    """Test that we can connect to a database. As a side effect, open_database(9 also creates the necessary table(s) that are required."""
+    """Test that we can connect to a database.
+
+    As a side effect, open_database(9 also creates the necessary table(s) that
+    are required.
+
+    """
     if hasattr(context, 'dburl') is False:
         assert False, "Database URI not specified"
     dbconn = fuzzdb.open_database(context)
     if dbconn is None:
         assert False, "Cannot open database %s" % context.dburl
     dbconn.close()
+
 
 @given(u'an authentication flow id "{auth_id}"')
 def step_impl(context, auth_id):
@@ -348,6 +354,6 @@ def step_impl(context):
         assert False, "%s new findings were found." % context.new_findings
     old_findings = fuzzdb.number_of_new_in_database(context)
     if old_findings > 0:
-        assert False, "No new findings found, but %s unprocessed findings from past runs found in database." % old_findings
+        assert False, "No new findings found, but %s unprocessed findings " \
+                      "from past runs found in database." % old_findings
     assert True
-

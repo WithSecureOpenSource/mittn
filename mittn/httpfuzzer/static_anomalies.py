@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pep8: disable=E501
 # pylint: disable=line-too-long
 """List of static anomalies that can be injected. Before using,
 replace mittn.org domain references with something you have control over.

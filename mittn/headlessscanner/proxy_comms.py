@@ -53,7 +53,9 @@ def start_burp(context):
     proxy_message = read_next_json(burpprocess)
     if proxy_message is None:
         kill_subprocess(burpprocess)
-        assert False, "Starting Burp Suite and extension failed or timed out. Is extension output set as stdout? Command line was: %s" % context.burp_cmdline
+        assert False, "Starting Burp Suite and extension failed or timed " \
+                      "out. Is extension output set as stdout? Command line " \
+                      "was: %s" % context.burp_cmdline
     if proxy_message.get("running") != 1:
         kill_subprocess(burpprocess)
         assert False, "Burp Suite extension responded with an unrecognised JSON message"

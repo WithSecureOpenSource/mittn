@@ -36,23 +36,25 @@ def open_database(context):
     # be big.
     db_metadata = MetaData()
     db_metadata.bind = db_engine
-    context.headlessscanner_issues = Table('headlessscanner_issues',
-                                           db_metadata,
-                                           Column('new_issue', types.Boolean),
-                                           Column('issue_no', types.Integer, primary_key=True, nullable=False),  # Implicit autoincrement
-                                           Column('timestamp', types.DateTime(timezone=True)),
-                                           Column('test_runner_host', types.Text),
-                                           Column('scenario_id', types.Text),
-                                           Column('url', types.Text),
-                                           Column('severity', types.Text),
-                                           Column('issuetype', types.Text),
-                                           Column('issuename', types.Text),
-                                           Column('issuedetail', types.Text),
-                                           Column('confidence', types.Text),
-                                           Column('host', types.Text),
-                                           Column('port', types.Text),
-                                           Column('protocol', types.Text),
-                                           Column('messages', types.LargeBinary))
+    context.headlessscanner_issues = Table(
+        'headlessscanner_issues',
+        db_metadata,
+        Column('new_issue', types.Boolean),
+        Column('issue_no', types.Integer, primary_key=True, nullable=False),  # Implicit autoincrement
+        Column('timestamp', types.DateTime(timezone=True)),
+        Column('test_runner_host', types.Text),
+        Column('scenario_id', types.Text),
+        Column('url', types.Text),
+        Column('severity', types.Text),
+        Column('issuetype', types.Text),
+        Column('issuename', types.Text),
+        Column('issuedetail', types.Text),
+        Column('confidence', types.Text),
+        Column('host', types.Text),
+        Column('port', types.Text),
+        Column('protocol', types.Text),
+        Column('messages', types.LargeBinary)
+    )
 
     # Create the table if it doesn't exist
     # and otherwise no effect

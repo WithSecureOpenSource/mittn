@@ -102,8 +102,8 @@ def known_false_positive(context, response):
             context.httpfuzzer_issues.c.scenario_id == response['scenario_id'],  # Text
             context.httpfuzzer_issues.c.server_protocol_error == response['server_protocol_error'],  # Text
             context.httpfuzzer_issues.c.resp_statuscode == str(response['resp_statuscode']),  # Text
-            context.httpfuzzer_issues.c.server_timeout == response['server_timeout'],  # Boolean
-            context.httpfuzzer_issues.c.server_error_text_detected == response['server_error_text_detected']))  # Boolean
+            context.httpfuzzer_issues.c.server_timeout == response['server_timeout'],  # Bool
+            context.httpfuzzer_issues.c.server_error_text_detected == response['server_error_text_detected']))  # Bool
 
     db_result = dbconn.execute(db_select)
 

@@ -102,7 +102,7 @@ def step_impl(context, groupsize):
         assert False, "No stored TLS connection result set was found."
     keyexchange = root.find(".//keyExchange")
     if keyexchange is None:
-       # Kudos bro!
+        # Kudos bro!
         return
     keytype = keyexchange.get('Type')
     realgroupsize = keyexchange.get('GroupSize')
@@ -302,6 +302,7 @@ def step_impl(context):
     assert hsts.get('isSupported') == 'True', \
         "HTTP Strict Transport Security header not observed"
 
+
 @step(u'server has no Heartbleed vulnerability')
 def step_impl(context):
     try:
@@ -311,6 +312,7 @@ def step_impl(context):
     heartbleed = root.find('.//openSslHeartbleed')
     assert heartbleed.get('isVulnerable') == 'False', \
         "Server is vulnerable for Heartbleed"
+
 
 @step(u'certificate does not use SHA-1')
 def step_impl(context):
