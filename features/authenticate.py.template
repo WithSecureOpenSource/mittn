@@ -15,7 +15,7 @@ def authenticate(context, auth_flow_id=None, acquire_new_authenticator=False):
     flows, if the tests need different ones.
     """
 
-    #### 
+    ####
     # This is the place which you need to modify if your target
     # requires authorisation. (If you don't, you can just copy this
     # template as features/authenticate.py and you should be set.)
@@ -50,7 +50,7 @@ def authenticate(context, auth_flow_id=None, acquire_new_authenticator=False):
     # implement it. If you use the auth methods Requests provides, do
     # not return the CustomAuth object - instead, return one of the
     # Requests library built-in authentication objects (see the doc
-    # link above).  
+    # link above).
     ###
 
     # Reuse an existing authenticator unless explicitly requested to

@@ -59,23 +59,25 @@ class dbtools_test_case(unittest.TestCase):
         db_engine = sqlalchemy.create_engine(self.context.dburl)
         dbconn = db_engine.connect()
         db_metadata = sqlalchemy.MetaData()
-        headlessscanner_issues = Table('headlessscanner_issues',
-                                       db_metadata,
-                                       Column('new_issue', types.Boolean),
-                                       Column('issue_no', types.Integer, primary_key=True, nullable=False),  # Implicit autoincrement
-                                       Column('timestamp', types.DateTime(timezone=True)),
-                                       Column('test_runner_host', types.Text),
-                                       Column('scenario_id', types.Text),
-                                       Column('url', types.Text),
-                                       Column('severity', types.Text),
-                                       Column('issuetype', types.Text),
-                                       Column('issuename', types.Text),
-                                       Column('issuedetail', types.Text),
-                                       Column('confidence', types.Text),
-                                       Column('host', types.Text),
-                                       Column('port', types.Text),
-                                       Column('protocol', types.Text),
-                                       Column('messages', types.LargeBinary))
+        headlessscanner_issues = Table(
+            'headlessscanner_issues',
+            db_metadata,
+            Column('new_issue', types.Boolean),
+            Column('issue_no', types.Integer, primary_key=True, nullable=False),  # Implicit autoincrement
+            Column('timestamp', types.DateTime(timezone=True)),
+            Column('test_runner_host', types.Text),
+            Column('scenario_id', types.Text),
+            Column('url', types.Text),
+            Column('severity', types.Text),
+            Column('issuetype', types.Text),
+            Column('issuename', types.Text),
+            Column('issuedetail', types.Text),
+            Column('confidence', types.Text),
+            Column('host', types.Text),
+            Column('port', types.Text),
+            Column('protocol', types.Text),
+            Column('messages', types.LargeBinary)
+        )
         db_select = sqlalchemy.sql.select([headlessscanner_issues])
         db_result = dbconn.execute(db_select)
         result = db_result.fetchone()
@@ -167,7 +169,6 @@ class dbtools_test_case(unittest.TestCase):
         self.assertEqual(dbtools.known_false_positive(self.context,
                                                       issue),
                          True, "A duplicate case not detected")
-
 
     def tearDown(self):
         try:

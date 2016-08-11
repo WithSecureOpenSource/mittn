@@ -49,13 +49,13 @@ def inject(context, injection_list):
                     context.proxy_address = None
 
                 responses += send_http(context, form_string,
-                                     timeout=context.timeout,
-                                     proxy=context.proxy_address,
-                                     method=method,
-                                     content_type=context.content_type,
-                                     scenario_id=context.scenario_id,
-                                     auth=authenticate(context,
-                                                       context.authentication_id))
+                                       timeout=context.timeout,
+                                       proxy=context.proxy_address,
+                                       method=method,
+                                       content_type=context.content_type,
+                                       scenario_id=context.scenario_id,
+                                       auth=authenticate(context,
+                                                         context.authentication_id))
 
                 # Here, I'd really like to send out unencoded (invalid)
                 # JSON too, but the json library barfs too easily, so
@@ -80,9 +80,9 @@ def test_valid_submission(context, injected_submission=None):
     :param injected_submission: Request body to be sent
     """
 
-    # to avoid errors re/ uninitialized object  
+    # to avoid errors re/ uninitialized object
     proxydict = {}
-    
+
     if injected_submission is None:
         injected_submission = "(None)"  # For user readability only
 

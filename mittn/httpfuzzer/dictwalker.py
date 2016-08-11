@@ -97,8 +97,8 @@ def dictwalk(branch, anomaly_dict, anomaly_key=None):
                 fuzzed_branch.append(fuzzdict)
         return fuzzed_branch
     # A leaf node; return just a list of anomalies for a value
-    if isinstance(branch, (int, str, unicode, float)) or branch in (
-    True, False, None):
+    if isinstance(branch, (int, str, unicode, float)) or \
+            branch in (True, False, None):
         # Get the anomaly to be injected from the anomaly_dict.
         anomaly = anomaly_dict.get(anomaly_key)
         if anomaly is None:

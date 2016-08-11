@@ -18,8 +18,8 @@ def unpack_integer_range(integerrange):
         assert False, "Number range %s in the feature file is invalid. Must " \
                       "contain just numbers, commas, and hyphens" % integerrange
     integerrange.replace(" ", "")
-    rangeparts = integerrange.split(',')  # One or more integer ranges
-                                          # separated by commas
+    rangeparts = integerrange.split(',')  # One+ comma-separated int ranges
+
     for rangepart in rangeparts:
         rangemaxmin = rangepart.split('-')  # Range is defined with a hyphen
         if len(rangemaxmin) == 1:  # This was a single value

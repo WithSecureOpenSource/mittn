@@ -20,13 +20,19 @@ __copyright__ = "Copyright (c) 2013- F-Secure"
 
 @given(u'a baseline database for scanner findings')
 def step_impl(context):
-    """Test that we can connect to a database. As a side effect, open_database(9 also creates the necessary table(s) that are required."""
+    """Test that we can connect to a database.
+
+    As a side effect, open_database(9 also creates the necessary table(s)
+    that are required.
+
+    """
     if hasattr(context, 'dburl') is False:
         assert False, "Database URI not specified"
     dbconn = scandb.open_database(context)
     if dbconn is None:
         assert False, "Cannot open database %s" % context.dburl
     dbconn.close()
+
 
 @given(u'a working Burp Suite installation')
 def step_impl(context):
@@ -49,7 +55,9 @@ def step_impl(context):
     proxy_message = read_next_json(burpprocess)
     if proxy_message is None:
         kill_subprocess(burpprocess)
-        assert False, "Timed out communicating to headless-scanner-driver extension over %s. Is something else running there?" % context.burp_proxy_address
+        assert False, "Timed out communicating to headless-scanner-driver " \
+                      "extension over %s. Is something else running there?" \
+                      % context.burp_proxy_address
 
     # Shut down Burp Suite. Again, see the scanner driver plugin docs for further info.
 
@@ -112,7 +120,8 @@ def step_impl(context, timeout):
         # Go through scan item statuses statuses
         if proxy_message is None:  # Extension did not respond
             kill_subprocess(burpprocess)
-            assert False, "Timed out retrieving scan status information from Burp Suite over %s" % context.burp_proxy_address
+            assert False, "Timed out retrieving scan status information from " \
+                          "Burp Suite over %s" % context.burp_proxy_address
         finished = True
         if proxy_message == []:  # No scan items were started by extension
             kill_subprocess(burpprocess)
@@ -120,10 +129,14 @@ def step_impl(context, timeout):
         for status in proxy_message:
             if not re_finished.match(status):
                 finished = False
-            if hasattr(context, 'fail_on_abandoned_scans'):  # In some test setups, abandoned scans are failures, and this has been set
+            # In some test setups, abandoned scans are failures, and this has been set
+            if hasattr(context, 'fail_on_abandoned_scans'):
                 if re_abandoned.match(status):
                     kill_subprocess(burpprocess)
-                    assert False, "Burp Suite reports an abandoned scan, but you wanted all scans to succeed. DNS problem or non-Target Scope hosts targeted in a test scenario?"
+                    assert False, "Burp Suite reports an abandoned scan, " \
+                                  "but you wanted all scans to succeed. DNS " \
+                                  "problem or non-Target Scope hosts " \
+                                  "targeted in a test scenario?"
         if finished is True:  # All scan statuses were in state "finished"
             break
         if (time.time() - scan_start_time) > (timeout * 60):
@@ -180,5 +193,6 @@ def step_impl(context):
     unprocessed_items = scandb.number_of_new_in_database(context)
 
     if unprocessed_items > 0:
-        assert False, "Unprocessed findings in database. %s new issue(s), total %s issue(s)." % (new_items, unprocessed_items)
+        assert False, "Unprocessed findings in database. %s new issue(s), " \
+                      "total %s issue(s)." % (new_items, unprocessed_items)
     assert True

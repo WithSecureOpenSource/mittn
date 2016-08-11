@@ -182,7 +182,6 @@ class dbtools_test_case(unittest.TestCase):
                                                       response),
                          True, "A duplicate case not detected")
 
-
     def tearDown(self):
         try:
             os.unlink(self.db_file)
